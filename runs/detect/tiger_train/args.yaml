@@ -2,10 +2,10 @@ task: detect
 mode: train
 model: yolov8n.pt
 data: C:\Users\Hp\OneDrive\Desktop\baghnetra\datasets\tiger_detection\data.yaml
-epochs: 12
+epochs: 8
 time: null
 patience: 100
-batch: 8
+batch: 4
 imgsz: 640
 save: true
 save_period: -1

@@ -14,6 +14,7 @@ from app.utils.config import (
     TIGER_IDENTIFIER_PATH,
     TIGER_EMBEDDINGS_PATH,
     BLANK_CONFIDENCE_THRESHOLD,
+    BLANK_REVIEW_THRESHOLD,
     TIGER_CONFIDENCE_THRESHOLD,
     HIGH_IDENTIFICATION_THRESHOLD,
     LOW_IDENTIFICATION_THRESHOLD,
@@ -91,14 +92,15 @@ class BaghNetraAIPipeline:
         
         # 2. Blank Image Classification
         blank_res = self.blank_detector.predict(img, blank_threshold=b_thresh)
-        is_blank = blank_res["blank"]
+        blank_conf = blank_res["blank_confidence"]
         
-        if is_blank:
+        # High confidence blank -> Auto quarantine
+        if blank_conf >= b_thresh:
             elapsed = time.time() - start_time
             return {
                 "fileName": filename,
                 "blank": True,
-                "blank_confidence": blank_res["blank_confidence"],
+                "blank_confidence": blank_conf,
                 "non_blank_confidence": blank_res["non_blank_confidence"],
                 "tiger_detected": False,
                 "tiger_confidence": 0.0,
@@ -109,6 +111,29 @@ class BaghNetraAIPipeline:
                 "identification_confidence": 0.0,
                 "needs_review": False,
                 "status": "QUARANTINE_BLANK",
+                "candidates": [],
+                "has_human": False,
+                "exif": exif,
+                "processing_time_ms": round(elapsed * 1000, 2),
+                "model_version": "BlankClassifier-v1.0"
+            }
+        # Medium confidence blank -> Safe triage: Route to Human Review Station
+        elif blank_conf >= BLANK_REVIEW_THRESHOLD:
+            elapsed = time.time() - start_time
+            return {
+                "fileName": filename,
+                "blank": True,
+                "blank_confidence": blank_conf,
+                "non_blank_confidence": blank_res["non_blank_confidence"],
+                "tiger_detected": False,
+                "tiger_confidence": 0.0,
+                "detected_class": "blank",
+                "bbox": [0, 0, w, h],
+                "individual": None,
+                "tiger_name": None,
+                "identification_confidence": 0.0,
+                "needs_review": True,
+                "status": "BLANK_NEEDS_REVIEW",
                 "candidates": [],
                 "has_human": False,
                 "exif": exif,

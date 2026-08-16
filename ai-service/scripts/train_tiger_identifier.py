@@ -88,7 +88,8 @@ def train_tiger_identifier(
     epochs: int = 8,
     batch_size: int = 8,
     lr: float = 0.0005,
-    margin: float = 0.3
+    margin: float = 0.3,
+    num_triplets: int = 200
 ):
     output_dir.mkdir(parents=True, exist_ok=True)
     logger.info(f"Starting Stripe Metric Learning training on: {dataset_path}")
@@ -104,7 +105,7 @@ def train_tiger_identifier(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Training on device: {device}")
     
-    dataset = TripletTigerDataset(dataset_path, num_triplets=40)
+    dataset = TripletTigerDataset(dataset_path, num_triplets=num_triplets)
     if len(dataset.tiger_ids) < 2:
         logger.error("At least 2 individual tigers with 2+ images required to train metric learning.")
         _save_baseline(output_dir, dataset_path)
@@ -244,9 +245,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train BaghNetra Tiger Identifier")
     parser.add_argument("--dataset", type=Path, default=DEFAULT_DATASET)
     parser.add_argument("--output_dir", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--epochs", type=int, default=6)
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--lr", type=float, default=0.0005)
+    parser.add_argument("--num_triplets", type=int, default=200)
     args = parser.parse_args()
     
     train_tiger_identifier(
@@ -254,5 +256,6 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
         epochs=args.epochs,
         batch_size=args.batch_size,
-        lr=args.lr
+        lr=args.lr,
+        num_triplets=args.num_triplets
     )
