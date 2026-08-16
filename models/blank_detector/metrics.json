@@ -1,0 +1,33 @@
+{
+  "model_name": "BlankClassifier-MobileNetV3",
+  "training_date": "2026-08-16 19:01:35",
+  "epochs": 4,
+  "batch_size": 8,
+  "learning_rate": 0.001,
+  "image_size": [
+    224,
+    224
+  ],
+  "accuracy": 0.9524,
+  "precision": 0.8824,
+  "recall": 1.0,
+  "f1_score": 0.9375,
+  "confusion_matrix": {
+    "matrix": [
+      [
+        25,
+        2
+      ],
+      [
+        0,
+        15
+      ]
+    ],
+    "labels": [
+      "BLANK (0)",
+      "NON_BLANK (1)"
+    ]
+  },
+  "false_negative_rate": 0.0,
+  "training_duration_seconds": 17.52
+}

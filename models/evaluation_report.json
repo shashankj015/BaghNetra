@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-08-16 19:07:07",
+  "jurisdiction": "Pench Tiger Reserve",
+  "blank_detector": {
+    "model_name": "BlankClassifier-MobileNetV3",
+    "training_date": "2026-08-16 19:01:35",
+    "epochs": 4,
+    "batch_size": 8,
+    "learning_rate": 0.001,
+    "image_size": [
+      224,
+      224
+    ],
+    "accuracy": 0.9524,
+    "precision": 0.8824,
+    "recall": 1.0,
+    "f1_score": 0.9375,
+    "confusion_matrix": {
+      "matrix": [
+        [
+          25,
+          2
+        ],
+        [
+          0,
+          15
+        ]
+      ],
+      "labels": [
+        "BLANK (0)",
+        "NON_BLANK (1)"
+      ]
+    },
+    "false_negative_rate": 0.0,
+    "training_duration_seconds": 17.52
+  },
+  "tiger_detector": {
+    "model_name": "YOLOv8-Wildlife-Tiger",
+    "training_date": "2026-08-16 19:02:31",
+    "epochs": 5,
+    "batch_size": 4,
+    "image_size": 640,
+    "classes": {
+      "0": "tiger",
+      "1": "other_animal",
+      "2": "human"
+    },
+    "mAP50": 0.8875,
+    "mAP50_95": 0.6291,
+    "precision": 0.621,
+    "recall": 0.8333,
+    "f1_score": 0.7117,
+    "duration_seconds": 19.5
+  },
+  "tiger_identifier": {
+    "model_name": "ResNet50-StripeMetricLearning",
+    "training_date": "2026-08-16 19:06:58",
+    "embedding_dim": 512,
+    "loss_function": "TripletMarginLoss(margin=0.3)",
+    "epochs": 3,
+    "top1_accuracy": 0.912,
+    "top3_accuracy": 0.978,
+    "mean_positive_similarity": 0.884,
+    "mean_negative_similarity": 0.285,
+    "false_match_rate": 0.018,
+    "catalog_size": 5,
+    "duration_seconds": 36.1
+  },
+  "overall_status": "VALIDATED"
+}

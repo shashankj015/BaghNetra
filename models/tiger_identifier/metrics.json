@@ -1,0 +1,14 @@
+{
+  "model_name": "ResNet50-StripeMetricLearning",
+  "training_date": "2026-08-16 19:08:41",
+  "embedding_dim": 512,
+  "loss_function": "TripletMarginLoss(margin=0.3)",
+  "epochs": 3,
+  "top1_accuracy": 0.912,
+  "top3_accuracy": 0.978,
+  "mean_positive_similarity": 0.884,
+  "mean_negative_similarity": 0.285,
+  "false_match_rate": 0.018,
+  "catalog_size": 5,
+  "duration_seconds": 30.54
+}
