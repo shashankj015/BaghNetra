@@ -178,5 +178,5 @@ class BaghNetraAIPipeline:
             "has_human": has_human,
             "exif": exif,
             "processing_time_ms": round(elapsed * 1000, 2),
-            "model_version": f"YOLOv8-Tiger+ResNet50Metric-v1.0"
+            "model_version": f"YOLOv8-Tiger+MetricCNN-v1.0"
         }

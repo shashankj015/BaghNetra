@@ -144,7 +144,7 @@ export default function ReviewPage() {
             />
             {/* Model Watermark */}
             <div style={{ position: 'absolute', bottom: '8px', left: '8px', background: 'rgba(0,0,0,0.7)', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.7rem', color: '#ffffff' }}>
-              Model: {current.modelVersion || 'YOLOv8 + ResNet50'}
+              Model: {current.modelVersion || 'YOLOv8 + Metric CNN'}
             </div>
           </div>
 

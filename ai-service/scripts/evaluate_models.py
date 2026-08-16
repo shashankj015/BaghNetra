@@ -38,30 +38,9 @@ def evaluate_all_models():
                 pass
         return {}
 
-    blank_res = read_metrics(BLANK_METRICS_PATH) or {
-        "accuracy": 0.942,
-        "precision": 0.951,
-        "recall": 0.938,
-        "f1_score": 0.944,
-        "confusion_matrix": {"matrix": [[14, 1], [1, 14]], "labels": ["BLANK", "NON_BLANK"]},
-        "false_negative_rate": 0.062
-    }
-    
-    tiger_res = read_metrics(TIGER_DETECTOR_METRICS_PATH) or {
-        "mAP50": 0.918,
-        "mAP50_95": 0.764,
-        "precision": 0.925,
-        "recall": 0.892,
-        "f1_score": 0.908
-    }
-    
-    id_res = read_metrics(TIGER_IDENTIFIER_METRICS_PATH) or {
-        "top1_accuracy": 0.912,
-        "top3_accuracy": 0.978,
-        "mean_positive_similarity": 0.884,
-        "mean_negative_similarity": 0.285,
-        "false_match_rate": 0.018
-    }
+    blank_res = read_metrics(BLANK_METRICS_PATH)
+    tiger_res = read_metrics(TIGER_DETECTOR_METRICS_PATH)
+    id_res = read_metrics(TIGER_IDENTIFIER_METRICS_PATH)
     
     print("\n1. BLANK DETECTOR (MobileNetV3):")
     print(f"   - Accuracy:       {blank_res.get('accuracy', 'N/A')}")
@@ -76,7 +55,7 @@ def evaluate_all_models():
     print(f"   - Precision:      {tiger_res.get('precision', 'N/A')}")
     print(f"   - Recall:         {tiger_res.get('recall', 'N/A')}")
     
-    print("\n3. INDIVIDUAL TIGER IDENTIFIER (ResNet50 + Metric Learning):")
+    print("\n3. INDIVIDUAL TIGER IDENTIFIER (Custom 4-Layer Metric CNN + Triplet Loss):")
     print(f"   - Top-1 Accuracy: {id_res.get('top1_accuracy', 'N/A')}")
     print(f"   - Top-3 Accuracy: {id_res.get('top3_accuracy', 'N/A')}")
     print(f"   - Intra-Indiv Sim:{id_res.get('mean_positive_similarity', 'N/A')}")

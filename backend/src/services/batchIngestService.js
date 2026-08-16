@@ -18,11 +18,34 @@ class BatchIngestService {
   }
 
   /**
+   * Resolves a folder path against multiple workspace candidates.
+   */
+  resolveFolderPath(folderPath) {
+    if (!folderPath) return null;
+    
+    // Candidates to test
+    const candidates = [
+      path.resolve(folderPath),
+      path.resolve(__dirname, '../../../', folderPath),
+      path.resolve(__dirname, '../../', folderPath),
+      path.resolve(process.cwd(), folderPath),
+      path.resolve(process.cwd(), '..', folderPath)
+    ];
+
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+    return path.resolve(folderPath);
+  }
+
+  /**
    * Scans a directory recursively to collect valid camera trap image file paths.
    */
   scanDirectory(dirPath) {
     let results = [];
-    if (!fs.existsSync(dirPath)) return results;
+    if (!dirPath || !fs.existsSync(dirPath)) return results;
 
     const list = fs.readdirSync(dirPath, { withFileTypes: true });
     for (const item of list) {
@@ -43,15 +66,16 @@ class BatchIngestService {
    * Starts an asynchronous batch processing run on a camera trap SD card folder.
    */
   async startBatchRun(folderPath, defaultStationId = 'PTR-C-01', options = {}) {
-    const filePaths = this.scanDirectory(folderPath);
+    const resolvedPath = this.resolveFolderPath(folderPath);
+    const filePaths = this.scanDirectory(resolvedPath);
     if (filePaths.length === 0) {
-      throw new Error(`No valid image files found in folder: ${folderPath}`);
+      throw new Error(`No valid image files found in folder: '${folderPath}' (Attempted absolute path: '${resolvedPath}'). Ensure the directory exists and contains .jpg, .jpeg, or .png camera trap files.`);
     }
 
     const runId = `RUN-${Date.now().toString(36).toUpperCase()}`;
     const runDoc = new ProcessingRun({
       runId,
-      folderPath,
+      folderPath: resolvedPath,
       stationId: defaultStationId,
       status: 'PROCESSING',
       totalImages: filePaths.length,

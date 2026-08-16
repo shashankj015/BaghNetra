@@ -4,8 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { ShieldCheck, Lock, User, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('password123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const { login, loading } = useAuth();
   const navigate = useNavigate();
@@ -70,6 +70,7 @@ export default function LoginPage() {
               <input
                 type="text"
                 required
+                placeholder="e.g. admin"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.85rem', flex: 1, outline: 'none' }}
@@ -86,6 +87,7 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
+                placeholder="Enter password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '0.85rem', flex: 1, outline: 'none' }}
@@ -103,7 +105,11 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: '#6b7280' }}>
+        <div style={{ marginTop: '1.25rem', padding: '0.6rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', textAlign: 'center', fontSize: '0.75rem', color: '#9ca3af' }}>
+          <span>Demo Credentials: <code>admin</code> / <code>password123</code></span>
+        </div>
+
+        <div style={{ marginTop: '0.75rem', textAlign: 'center', fontSize: '0.75rem', color: '#6b7280' }}>
           Authorized Forest Staff Only • 100% Local Offline System
         </div>
       </div>

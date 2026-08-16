@@ -196,10 +196,11 @@ def train_tiger_identifier(
     
     # Save validation metrics
     metrics = {
-        "model_name": "ResNet50-StripeMetricLearning",
+        "model_name": "CustomMetricCNN-StripeEmbedding",
         "training_date": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "architecture": "Custom 4-Layer Metric CNN (Triplet Margin Loss)",
         "embedding_dim": 512,
-        "loss_function": "TripletMarginLoss(margin=0.3)",
+        "loss_function": f"TripletMarginLoss(margin={margin})",
         "epochs": epochs,
         "top1_accuracy": 0.912,
         "top3_accuracy": 0.978,

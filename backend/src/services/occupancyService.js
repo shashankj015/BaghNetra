@@ -12,7 +12,16 @@ class OccupancyService {
 
     // Fetch all movement records for this tiger
     const records = await MovementRecord.find({ tigerId }).sort({ timestamp: 1 });
-    if (records.length === 0) return tiger;
+    if (records.length === 0) {
+      tiger.totalCaptures = 0;
+      tiger.occupiedArea = 0;
+      tiger.stations = [];
+      tiger.firstSeen = null;
+      tiger.lastSeen = null;
+      tiger.homeRange = null;
+      await tiger.save();
+      return tiger;
+    }
 
     const points = records.map(r => ({
       latitude: r.latitude,

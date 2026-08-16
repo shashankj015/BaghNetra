@@ -103,7 +103,7 @@ async def get_model_status():
             },
             {
                 "name": "Individual Tiger Re-Identifier",
-                "architecture": "ResNet50 + Deep Metric Learning (Triplet Margin Loss)",
+                "architecture": "Custom 4-Layer Metric CNN (Triplet Margin Loss)",
                 "task": "Flank Stripe Pattern Feature Extraction & Cosine Re-Identification",
                 "version": "v1.0",
                 "status": "active" if pipeline.tiger_identifier.is_loaded else "standby",

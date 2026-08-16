@@ -32,6 +32,10 @@ export default function DashboardPage() {
     spaceSavedMB: 0,
     personHoursSaved: 0
   });
+  const [analytics, setAnalytics] = useState({
+    breakdown: { blanks: 0, tigers: 0, otherAnimals: 0, humans: 0 },
+    dailyActivity: { labels: [], rawVolume: [], retainedVolume: [] }
+  });
   const [tigers, setTigers] = useState([]);
   const [stations, setStations] = useState([]);
   const [recentAlerts, setRecentAlerts] = useState([]);
@@ -40,12 +44,13 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [tigerRes, camRes, imgRes, alertRes, qRes] = await Promise.all([
+        const [tigerRes, camRes, imgRes, alertRes, qRes, analyticsRes] = await Promise.all([
           api.get('/tigers'),
           api.get('/cameras'),
           api.get('/images?limit=100'),
           api.get('/alerts?limit=5'),
-          api.get('/images/quarantine')
+          api.get('/images/quarantine'),
+          api.get('/images/analytics')
         ]);
 
         const allImgs = imgRes.data.images || [];
@@ -55,9 +60,9 @@ export default function DashboardPage() {
         const unknowns = allImgs.filter(i => i.reviewStatus === 'PENDING' && !i.tigerId).length;
 
         setStats({
-          totalImages: imgRes.data.total || 0,
-          blankCount: blanks,
-          tigerDetections: tigersFound,
+          totalImages: analyticsRes.data.totalImages ?? imgRes.data.total ?? 0,
+          blankCount: analyticsRes.data.breakdown?.blanks ?? blanks,
+          tigerDetections: analyticsRes.data.breakdown?.tigers ?? tigersFound,
           knownTigers: tigerRes.data.count || 0,
           unknownCandidates: unknowns,
           reviewPending: pending,
@@ -66,6 +71,10 @@ export default function DashboardPage() {
           spaceSavedMB: qRes.data.stats?.spaceSavedMB || 0,
           personHoursSaved: qRes.data.stats?.personHoursSaved || 0
         });
+
+        if (analyticsRes.data) {
+          setAnalytics(analyticsRes.data);
+        }
 
         setTigers(tigerRes.data.tigers || []);
         setStations(camRes.data.stations || []);
@@ -80,14 +89,16 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, []);
 
+  const totalBreakdown = (analytics.breakdown.blanks + analytics.breakdown.tigers + analytics.breakdown.otherAnimals + analytics.breakdown.humans);
+
   const triageChartData = {
     labels: ['Blank False Triggers', 'Tiger Detections', 'Other Wildlife', 'Human Patrol'],
     datasets: [{
       data: [
-        stats.blankCount || 42,
-        stats.tigerDetections || 18,
-        14,
-        6
+        analytics.breakdown.blanks,
+        analytics.breakdown.tigers,
+        analytics.breakdown.otherAnimals,
+        analytics.breakdown.humans
       ],
       backgroundColor: ['#6b7280', '#f59e0b', '#10b981', '#3b82f6'],
       borderColor: '#0b101c',
@@ -96,18 +107,18 @@ export default function DashboardPage() {
   };
 
   const volumeChartData = {
-    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+    labels: analytics.dailyActivity.labels.length > 0 ? analytics.dailyActivity.labels : ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
     datasets: [
       {
         label: 'Raw Images Ingested',
-        data: [120, 240, 190, 480, 310, 520, 390],
+        data: analytics.dailyActivity.rawVolume.length > 0 ? analytics.dailyActivity.rawVolume : [0, 0, 0, 0, 0, 0, 0],
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         tension: 0.3
       },
       {
         label: 'Useful Wildlife Frames Retained',
-        data: [25, 48, 38, 92, 60, 105, 82],
+        data: analytics.dailyActivity.retainedVolume.length > 0 ? analytics.dailyActivity.retainedVolume : [0, 0, 0, 0, 0, 0, 0],
         borderColor: '#10b981',
         backgroundColor: 'rgba(16, 185, 129, 0.2)',
         tension: 0.3
@@ -230,7 +241,14 @@ export default function DashboardPage() {
             Proportion of false-trigger blanks vs verified wildlife.
           </p>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Doughnut data={triageChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af', boxWidth: 12 } } } }} />
+            {totalBreakdown > 0 ? (
+              <Doughnut data={triageChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af', boxWidth: 12 } } } }} />
+            ) : (
+              <div style={{ textAlign: 'center', color: '#9ca3af', padding: '2rem' }}>
+                <p style={{ fontSize: '0.85rem', margin: 0 }}>No camera trap image triage data yet.</p>
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>Ingest an SD card to generate automated triage proportions.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -242,8 +260,15 @@ export default function DashboardPage() {
           <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: '1rem' }}>
             Demonstrates 70%+ volume reduction from safe blank image filtering.
           </p>
-          <div style={{ height: '220px' }}>
-            <Line data={volumeChartData} options={{ maintainAspectRatio: false, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } } }, plugins: { legend: { labels: { color: '#9ca3af' } } } }} />
+          <div style={{ height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {analytics.dailyActivity.rawVolume.some(v => v > 0) ? (
+              <Line data={volumeChartData} options={{ maintainAspectRatio: false, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } } }, plugins: { legend: { labels: { color: '#9ca3af' } } } }} />
+            ) : (
+              <div style={{ textAlign: 'center', color: '#9ca3af' }}>
+                <p style={{ fontSize: '0.85rem', margin: 0 }}>No weekly ingestion volume recorded.</p>
+                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>Camera trap runs ingested within the past 7 days will appear here.</p>
+              </div>
+            )}
           </div>
         </div>
 

@@ -1,18 +1,23 @@
 {
   "model_name": "YOLOv8-Wildlife-Tiger",
-  "training_date": "2026-08-16 19:02:31",
-  "epochs": 5,
-  "batch_size": 4,
+  "training_date": "2026-08-16 20:24:26",
+  "epochs": 12,
+  "batch_size": 8,
   "image_size": 640,
   "classes": {
     "0": "tiger",
     "1": "other_animal",
     "2": "human"
   },
-  "mAP50": 0.8875,
-  "mAP50_95": 0.6291,
-  "precision": 0.621,
-  "recall": 0.8333,
-  "f1_score": 0.7117,
-  "duration_seconds": 19.5
+  "mAP50": 0.995,
+  "mAP50_95": 0.9008,
+  "precision": 0.9779,
+  "recall": 1.0,
+  "f1_score": 0.9888,
+  "per_class_map50": {
+    "tiger": 0.9047,
+    "other_animal": 0.902,
+    "human": 0.8955
+  },
+  "duration_seconds": 533.09
 }

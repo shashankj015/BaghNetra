@@ -61,7 +61,7 @@ export default function ModelsPage() {
             ● Offline Local Mode
           </span>
           <span className="badge badge-buffer">
-            PyTorch + YOLOv8 + ResNet50
+            PyTorch + YOLOv8 + Metric CNN
           </span>
         </div>
       </div>

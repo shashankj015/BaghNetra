@@ -131,3 +131,59 @@ exports.purgeQuarantine = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getDashboardAnalytics = async (req, res) => {
+  try {
+    const totalImages = await Image.countDocuments({ isDeleted: false });
+    const blankCount = await Image.countDocuments({ blank: true, isDeleted: false });
+    const tigerCount = await Image.countDocuments({ tigerDetected: true, isDeleted: false });
+    const otherCount = await Image.countDocuments({ detectedClass: 'other_animal', isDeleted: false });
+    const humanCount = await Image.countDocuments({ detectedClass: 'human', isDeleted: false });
+
+    // Last 7 days volume aggregation
+    const days = [];
+    const rawVolume = [];
+    const retainedVolume = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+      const endOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+      const dayLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      days.push(dayLabel);
+
+      const dayTotal = await Image.countDocuments({
+        createdAt: { $gte: startOfDay, $lte: endOfDay },
+        isDeleted: false
+      });
+      const dayRetained = await Image.countDocuments({
+        createdAt: { $gte: startOfDay, $lte: endOfDay },
+        blank: false,
+        isDeleted: false
+      });
+
+      rawVolume.push(dayTotal);
+      retainedVolume.push(dayRetained);
+    }
+
+    res.json({
+      totalImages,
+      breakdown: {
+        blanks: blankCount,
+        tigers: tigerCount,
+        otherAnimals: otherCount,
+        humans: humanCount
+      },
+      dailyActivity: {
+        labels: days,
+        rawVolume,
+        retainedVolume
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+

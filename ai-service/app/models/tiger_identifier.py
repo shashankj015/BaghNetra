@@ -88,7 +88,7 @@ class TigerIdentifier:
                     logger.info(f"Loaded Tiger Identifier weights from {model_path}")
                 else:
                     self.model = StripeEmbeddingNet(embedding_dim=512, pretrained=True)
-                    logger.info("Initialized Stripe Embedding Network with ResNet50 backbone")
+                    logger.info("Initialized Stripe Embedding Network with Custom 4-Layer Metric CNN backbone")
                 self.model.to(device)
                 self.model.eval()
                 self.is_loaded = True

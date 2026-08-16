@@ -64,7 +64,7 @@ class MovementAnalysisService {
               timestamp: cap.timestamp,
               daysSinceStationInstalled: Math.round(daysSinceInstallation)
             },
-            confidence: 0.92,
+            confidence: Math.min(0.98, Math.max(0.75, round(0.80 + 0.15 * (cap.confidence || 0.9), 2))),
             stationId: cap.stationId,
             latitude: cap.latitude,
             longitude: cap.longitude,
@@ -74,6 +74,13 @@ class MovementAnalysisService {
 
           // 2. Check for Village-Adjacent Boundary Incursion (High Priority Warning)
           if (station && station.zone === ZONES.VILLAGE_ADJACENT) {
+            const villageDistKm = haversineDistance(
+              tiger.activityCentroid?.latitude || cap.latitude,
+              tiger.activityCentroid?.longitude || cap.longitude,
+              cap.latitude,
+              cap.longitude
+            );
+
             const villageAlert = await this.createAlert({
               tigerId: tiger.tigerId,
               tigerName: tiger.name,
@@ -88,10 +95,10 @@ class MovementAnalysisService {
               newEvidence: {
                 stationId: cap.stationId,
                 villageBorderName: station.name,
-                distanceToBufferKm: 1.2,
+                distanceToBufferKm: round(villageDistKm, 2),
                 timestamp: cap.timestamp
               },
-              confidence: 0.95,
+              confidence: Math.min(0.99, Math.max(0.85, round(0.90 + 0.08 * (cap.confidence || 0.9), 2))),
               stationId: cap.stationId,
               latitude: cap.latitude,
               longitude: cap.longitude,
@@ -116,7 +123,7 @@ class MovementAnalysisService {
                 zone: 'BUFFER',
                 timestamp: cap.timestamp
               },
-              confidence: 0.89,
+              confidence: Math.min(0.96, Math.max(0.78, round(0.82 + 0.12 * (cap.confidence || 0.9), 2))),
               stationId: cap.stationId,
               latitude: cap.latitude,
               longitude: cap.longitude,
@@ -139,18 +146,29 @@ class MovementAnalysisService {
           newCentroidLon
         );
 
-        // Core shift threshold is ~4.5 km linear (~16-20 km² area equivalent)
-        const isCore = tiger.stations.some(s => s.startsWith('PTR-C'));
-        const thresholdKm = isCore ? 4.2 : 3.0;
+        // Core shift evaluated on area basis (THRESHOLDS.CORE_CENTROID_SHIFT_KM2 = 17.5 km²)
+        // Buffer shift evaluated on linear distance (THRESHOLDS.BUFFER_CENTROID_SHIFT_KM = 5.0 km)
+        const isCore = (tiger.stations || []).some(s => s.startsWith('PTR-C'));
+        const shiftAreaKm2 = Math.PI * Math.pow(shiftDistKm, 2);
+        
+        const isShiftTriggered = isCore 
+          ? (shiftAreaKm2 >= THRESHOLDS.CORE_CENTROID_SHIFT_KM2)
+          : (shiftDistKm >= THRESHOLDS.BUFFER_CENTROID_SHIFT_KM);
 
-        if (shiftDistKm > thresholdKm) {
+        if (isShiftTriggered) {
+          const ratio = isCore 
+            ? (shiftAreaKm2 / THRESHOLDS.CORE_CENTROID_SHIFT_KM2)
+            : (shiftDistKm / THRESHOLDS.BUFFER_CENTROID_SHIFT_KM);
+          
+          const dynamicConfidence = Math.min(0.99, Math.max(0.70, round(0.75 + 0.15 * Math.min(ratio - 1, 1) + 0.05 * Math.min(newCaptures.length / 5, 1), 2)));
+
           const centroidAlert = await this.createAlert({
             tigerId: tiger.tigerId,
             tigerName: tiger.name,
             type: ALERT_TYPES.RANGE_CENTROID_SHIFT,
-            severity: ALERT_SEVERITY.WARNING,
-            title: `Territory Centroid Shift of ${shiftDistKm.toFixed(1)} km`,
-            description: `Activity centroid for ${tiger.name} (${tiger.tigerId}) shifted by ${shiftDistKm.toFixed(2)} km compared to historical territory.`,
+            severity: ratio > 1.5 ? ALERT_SEVERITY.CRITICAL : ALERT_SEVERITY.WARNING,
+            title: `Territory Centroid Shift of ${shiftDistKm.toFixed(1)} km (${shiftAreaKm2.toFixed(1)} km² area)`,
+            description: `Activity centroid for ${tiger.name} (${tiger.tigerId}) shifted by ${shiftDistKm.toFixed(2)} km (${shiftAreaKm2.toFixed(1)} km² area displacement) exceeding the ${isCore ? THRESHOLDS.CORE_CENTROID_SHIFT_KM2 + ' km² core area' : THRESHOLDS.BUFFER_CENTROID_SHIFT_KM + ' km buffer distance'} threshold.`,
             previousEvidence: {
               historicalCentroid: tiger.activityCentroid,
               historicalAreaKm2: tiger.occupiedArea
@@ -158,9 +176,10 @@ class MovementAnalysisService {
             newEvidence: {
               runCentroid: { latitude: newCentroidLat, longitude: newCentroidLon },
               shiftDistanceKm: round(shiftDistKm, 2),
+              shiftAreaKm2: round(shiftAreaKm2, 2),
               samplePointsCount: newCaptures.length
             },
-            confidence: 0.88,
+            confidence: dynamicConfidence,
             stationId: newCaptures[0].stationId,
             latitude: newCentroidLat,
             longitude: newCentroidLon,

@@ -81,22 +81,37 @@ class TigerDetector:
                 if boxes is None or len(boxes) == 0:
                     continue
                     
+                # Determine if model is custom 3-class model ({0: 'tiger', 1: 'other_animal', 2: 'human'})
+                is_custom_model = (
+                    hasattr(self.model, "names") and
+                    isinstance(self.model.names, dict) and
+                    self.model.names.get(0) == "tiger"
+                )
+                
                 for box in boxes:
                     cls_id = int(box.cls[0].item())
                     conf = float(box.conf[0].item())
                     xyxy = box.xyxy[0].cpu().numpy().tolist()
                     
-                    # Map standard COCO or custom classes
-                    # COCO: 0=person, 15=cat/tiger/leopard, 16=dog, 17=horse, 18=sheep, 19=cow, 20=elephant, 21=bear, 22=zebra, 23=giraffe
-                    class_name = self.CLASS_NAMES.get(cls_id, "other_animal")
-                    if cls_id == 0 or cls_id == 2:
-                        class_name = "human"
-                        has_human = True
-                    elif cls_id in [15, 16, 21] or cls_id == 0:
-                        # In custom model 0 is tiger; in COCO 15/16/21 are carnivores
-                        class_name = "tiger"
+                    if is_custom_model:
+                        # Custom 3-Class Pench Detector: 0=tiger, 1=other_animal, 2=human
+                        if cls_id == 0:
+                            class_name = "tiger"
+                        elif cls_id == 2:
+                            class_name = "human"
+                            has_human = True
+                        else:
+                            class_name = "other_animal"
                     else:
-                        class_name = "other_animal"
+                        # Fallback standard COCO 80-class model
+                        # COCO: 0=person, 15=cat, 16=dog, 17=horse, 18=sheep, 19=cow, 20=elephant, 21=bear, 22=zebra, 23=giraffe
+                        if cls_id == 0:
+                            class_name = "human"
+                            has_human = True
+                        elif cls_id in [15, 16, 21]: # Feline / large carnivore proxy
+                            class_name = "tiger"
+                        else:
+                            class_name = "other_animal"
                         
                     det = {
                         "class": class_name,

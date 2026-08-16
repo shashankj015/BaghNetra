@@ -1,6 +1,7 @@
 {
-  "model_name": "ResNet50-StripeMetricLearning",
+  "model_name": "CustomMetricCNN-StripeEmbedding",
   "training_date": "2026-08-16 19:08:41",
+  "architecture": "Custom 4-Layer Metric CNN (Triplet Margin Loss)",
   "embedding_dim": 512,
   "loss_function": "TripletMarginLoss(margin=0.3)",
   "epochs": 3,

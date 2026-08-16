@@ -228,7 +228,96 @@ def generate_all_datasets():
             
     print("[OK] Blank Image Dataset generated.")
     
-    # 2. Individual Tiger Dataset for Metric Learning
+    # 2. YOLO Tiger Detection Dataset
+    yolo_base = DATASETS_DIR / "tiger_detection"
+    for split in ["train", "val", "test"]:
+        (yolo_base / "images" / split).mkdir(parents=True, exist_ok=True)
+        (yolo_base / "labels" / split).mkdir(parents=True, exist_ok=True)
+        
+        # Determine counts
+        n_tigers = 25 if split == "train" else (8 if split == "val" else 5)
+        n_animals = 15 if split == "train" else (5 if split == "val" else 4)
+        n_humans = 10 if split == "train" else (4 if split == "val" else 3)
+        n_blanks = 10 if split == "train" else (3 if split == "val" else 2)
+        
+        # 1. Tiger frames (class 0)
+        for i in range(n_tigers):
+            tid = random.choice(list(TIGER_PROFILES.keys()))
+            var = i % 12
+            img = render_tiger_frame(tid, variation=var)
+            img_fname = f"tiger_{split}_{i:03d}_{tid}.jpg"
+            lbl_fname = f"tiger_{split}_{i:03d}_{tid}.txt"
+            img.save(yolo_base / "images" / split / img_fname)
+            
+            # Calculate exact bounding box for tiger body + head
+            bx1 = 640 // 2 - 170 + (var * 8)
+            by1 = 480 // 2 - 70
+            bx2 = 640 // 2 + 150 + (var * 8)
+            by2 = 480 // 2 + 90
+            hx1, hy1, hx2, hy2 = bx1 - 60, by1 - 30, bx1 + 40, by1 + 60
+            
+            x1 = max(0, min(bx1, hx1) - 10)
+            y1 = max(0, min(by1, hy1) - 10)
+            x2 = min(640, max(bx2, hx2) + 10)
+            y2 = min(480, max(by2, hy2) + 10)
+            
+            xc = ((x1 + x2) / 2.0) / 640.0
+            yc = ((y1 + y2) / 2.0) / 480.0
+            w = (x2 - x1) / 640.0
+            h = (y2 - y1) / 480.0
+            
+            with open(yolo_base / "labels" / split / lbl_fname, "w", encoding="utf-8") as f:
+                f.write(f"0 {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}\n")
+                
+        # 2. Other animals (class 1: chital, leopard)
+        for i in range(n_animals):
+            atype = random.choice(["chital", "leopard"])
+            img = render_animal_frame(atype)
+            img_fname = f"animal_{split}_{i:03d}_{atype}.jpg"
+            lbl_fname = f"animal_{split}_{i:03d}_{atype}.txt"
+            img.save(yolo_base / "images" / split / img_fname)
+            
+            xc, yc, w, h = 0.484375, 0.572917, 0.312500, 0.229167
+            with open(yolo_base / "labels" / split / lbl_fname, "w", encoding="utf-8") as f:
+                f.write(f"1 {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}\n")
+                
+        # 3. Humans (class 2: patrol guard)
+        for i in range(n_humans):
+            img = render_animal_frame("human")
+            img_fname = f"human_{split}_{i:03d}.jpg"
+            lbl_fname = f"human_{split}_{i:03d}.txt"
+            img.save(yolo_base / "images" / split / img_fname)
+            
+            xc, yc, w, h = 0.500000, 0.541667, 0.109375, 0.479167
+            with open(yolo_base / "labels" / split / lbl_fname, "w", encoding="utf-8") as f:
+                f.write(f"2 {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}\n")
+                
+        # 4. Blanks (Background images, empty label)
+        for i in range(n_blanks):
+            b_type = random.choice(["grass", "rain", "night_dark"])
+            img = render_blank_frame(b_type)
+            img_fname = f"blank_{split}_{i:03d}.jpg"
+            lbl_fname = f"blank_{split}_{i:03d}.txt"
+            img.save(yolo_base / "images" / split / img_fname)
+            with open(yolo_base / "labels" / split / lbl_fname, "w", encoding="utf-8") as f:
+                f.write("") # Empty annotation for background frame
+                
+    # Write data.yaml with forward slashes
+    data_yaml_path = yolo_base / "data.yaml"
+    with open(data_yaml_path, "w", encoding="utf-8") as f:
+        f.write(f"""path: {str(yolo_base.resolve()).replace('\\\\', '/').replace('\\', '/')}
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: tiger
+  1: other_animal
+  2: human
+""")
+    print("[OK] YOLO Tiger Detection Dataset generated.")
+    
+    # 3. Individual Tiger Dataset for Metric Learning
     id_base = DATASETS_DIR / "individual_tiger"
     for tiger_id in TIGER_PROFILES.keys():
         tiger_dir = id_base / tiger_id

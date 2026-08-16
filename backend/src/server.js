@@ -5,6 +5,9 @@ const CameraStation = require('./models/CameraStation');
 const Tiger = require('./models/Tiger');
 const User = require('./models/User');
 
+const MovementRecord = require('./models/MovementRecord');
+const occupancyService = require('./services/occupancyService');
+
 const PORT = process.env.PORT || 5000;
 
 const seedInitialData = async () => {
@@ -38,9 +41,6 @@ const seedInitialData = async () => {
           sex: 'FEMALE',
           estimatedAge: 6.5,
           status: 'RESIDENT',
-          stations: ['PTR-C-01', 'PTR-C-02', 'PTR-C-04'],
-          activityCentroid: { latitude: 21.6780, longitude: 79.3280 },
-          occupiedArea: 28.4,
           healthNotes: 'Legendary matriarch of Pench. Consistent core territory usage.'
         },
         {
@@ -49,9 +49,6 @@ const seedInitialData = async () => {
           sex: 'FEMALE',
           estimatedAge: 5.0,
           status: 'RESIDENT',
-          stations: ['PTR-C-02', 'PTR-C-03'],
-          activityCentroid: { latitude: 21.6860, longitude: 79.3170 },
-          occupiedArea: 22.1,
           healthNotes: 'Dominant core female with distinctive right flank stripes.'
         },
         {
@@ -60,9 +57,6 @@ const seedInitialData = async () => {
           sex: 'MALE',
           estimatedAge: 7.0,
           status: 'RESIDENT',
-          stations: ['PTR-C-01', 'PTR-C-03', 'PTR-C-04'],
-          activityCentroid: { latitude: 21.7010, longitude: 79.3100 },
-          occupiedArea: 48.5,
           healthNotes: 'Large territorial prime breeding male covering northern core.'
         },
         {
@@ -71,9 +65,6 @@ const seedInitialData = async () => {
           sex: 'MALE',
           estimatedAge: 4.5,
           status: 'RESIDENT',
-          stations: ['PTR-C-02', 'PTR-B-02'],
-          activityCentroid: { latitude: 21.6310, longitude: 79.3830 },
-          occupiedArea: 35.2,
           healthNotes: 'Southern sector male active near Jamtara buffer boundary.'
         },
         {
@@ -82,15 +73,55 @@ const seedInitialData = async () => {
           sex: 'MALE',
           estimatedAge: 3.5,
           status: 'DISPERSING',
-          stations: ['PTR-B-01'],
-          activityCentroid: { latitude: 21.7850, longitude: 79.4120 },
-          occupiedArea: 19.8,
           healthNotes: 'Young dispersing sub-adult male monitored along Rukhad buffer ridge.'
         }
       ];
       await Tiger.insertMany(tigers);
       console.log(`[BaghNetra-Seed] Seeded ${tigers.length} Pench resident tigers.`);
     }
+
+    // 3. Seed Grounded Historical Movement Telemetry if empty
+    const movementCount = await MovementRecord.countDocuments();
+    if (movementCount === 0) {
+      console.log('[BaghNetra-Seed] Seeding baseline historical movement records for catalog tigers...');
+      const now = Date.now();
+      const dayMs = 24 * 60 * 60 * 1000;
+
+      const sampleMovements = [
+        // BT001 (Collarwali) - Core stations
+        { tigerId: 'BT001', stationId: 'PTR-C-01', zone: 'CORE', latitude: 21.6842, longitude: 79.3124, timestamp: new Date(now - 30 * dayMs), confidence: 0.94 },
+        { tigerId: 'BT001', stationId: 'PTR-C-04', zone: 'CORE', latitude: 21.6980, longitude: 79.3280, timestamp: new Date(now - 18 * dayMs), confidence: 0.96 },
+        { tigerId: 'BT001', stationId: 'PTR-C-02', zone: 'CORE', latitude: 21.6521, longitude: 79.3451, timestamp: new Date(now - 5 * dayMs), confidence: 0.92 },
+        { tigerId: 'BT001', stationId: 'PTR-C-01', zone: 'CORE', latitude: 21.6842, longitude: 79.3124, timestamp: new Date(now - 1 * dayMs), confidence: 0.95 },
+
+        // BT002 (Langdi) - Core stations
+        { tigerId: 'BT002', stationId: 'PTR-C-02', zone: 'CORE', latitude: 21.6521, longitude: 79.3451, timestamp: new Date(now - 22 * dayMs), confidence: 0.91 },
+        { tigerId: 'BT002', stationId: 'PTR-C-03', zone: 'CORE', latitude: 21.7214, longitude: 79.2890, timestamp: new Date(now - 12 * dayMs), confidence: 0.89 },
+        { tigerId: 'BT002', stationId: 'PTR-C-04', zone: 'CORE', latitude: 21.6980, longitude: 79.3280, timestamp: new Date(now - 3 * dayMs), confidence: 0.93 },
+
+        // BT003 (Raiyyakassa) - Northern core territory
+        { tigerId: 'BT003', stationId: 'PTR-C-03', zone: 'CORE', latitude: 21.7214, longitude: 79.2890, timestamp: new Date(now - 28 * dayMs), confidence: 0.95 },
+        { tigerId: 'BT003', stationId: 'PTR-C-01', zone: 'CORE', latitude: 21.6842, longitude: 79.3124, timestamp: new Date(now - 14 * dayMs), confidence: 0.96 },
+        { tigerId: 'BT003', stationId: 'PTR-C-04', zone: 'CORE', latitude: 21.6980, longitude: 79.3280, timestamp: new Date(now - 2 * dayMs), confidence: 0.97 },
+
+        // BT004 (Charger) - Southern core / Jamtara buffer
+        { tigerId: 'BT004', stationId: 'PTR-C-02', zone: 'CORE', latitude: 21.6521, longitude: 79.3451, timestamp: new Date(now - 20 * dayMs), confidence: 0.90 },
+        { tigerId: 'BT004', stationId: 'PTR-B-02', zone: 'BUFFER', latitude: 21.6110, longitude: 79.4210, timestamp: new Date(now - 4 * dayMs), confidence: 0.92 },
+
+        // BT005 (Bikram) - Rukhad Buffer
+        { tigerId: 'BT005', stationId: 'PTR-B-01', zone: 'BUFFER', latitude: 21.7850, longitude: 79.4120, timestamp: new Date(now - 10 * dayMs), confidence: 0.88 },
+        { tigerId: 'BT005', stationId: 'PTR-C-03', zone: 'CORE', latitude: 21.7214, longitude: 79.2890, timestamp: new Date(now - 1 * dayMs), confidence: 0.85 }
+      ];
+      await MovementRecord.insertMany(sampleMovements);
+      console.log(`[BaghNetra-Seed] Seeded ${sampleMovements.length} baseline movement records.`);
+    }
+
+    // 4. Synchronize tiger occupancy metrics dynamically from telemetry
+    const allTigers = await Tiger.find({});
+    for (const t of allTigers) {
+      await occupancyService.regenerateTigerOccupancy(t.tigerId);
+    }
+    console.log('[BaghNetra-Seed] Regenerated dynamic telemetry-derived occupancy for all catalogue tigers.');
 
     // 3. Seed Default Admin User if empty
     const userCount = await User.countDocuments();
