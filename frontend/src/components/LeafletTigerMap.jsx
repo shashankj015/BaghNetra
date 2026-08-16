@@ -51,15 +51,16 @@ export default function LeafletTigerMap({
   sightings = [],
   center = [21.6950, 79.3500],
   zoom = 11,
-  height = '500px',
-  selectedTigerId = null
+  height = '100%',
+  selectedTigerId = null,
+  className = ''
 }) {
   return (
-    <div style={{ height, width: '100%', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+    <div className={`relative w-full h-full overflow-hidden ${className}`} style={{ height }}>
       <MapContainer
         center={center}
         zoom={zoom}
-        style={{ height: '100%', width: '100%' }}
+        className="w-full h-full z-0"
         scrollWheelZoom={true}
       >
         <ChangeView center={center} zoom={zoom} />

@@ -12,6 +12,8 @@ import MapPage from './pages/MapPage';
 import ReviewPage from './pages/ReviewPage';
 import AlertsPage from './pages/AlertsPage';
 import ModelsPage from './pages/ModelsPage';
+import MovementIntelligencePage from './pages/MovementIntelligencePage';
+import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 
@@ -30,10 +32,12 @@ export default function App() {
           <Route path="runs" element={<ProcessingRunsPage />} />
           <Route path="tigers" element={<TigersPage />} />
           <Route path="tigers/:id" element={<TigerDetailPage />} />
+          <Route path="movement" element={<MovementIntelligencePage />} />
           <Route path="cameras" element={<CamerasPage />} />
           <Route path="map" element={<MapPage />} />
           <Route path="review" element={<ReviewPage />} />
           <Route path="alerts" element={<AlertsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="models" element={<ModelsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
