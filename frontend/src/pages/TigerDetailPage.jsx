@@ -23,6 +23,7 @@ export default function TigerDetailPage() {
   const [loading, setLoading] = useState(true);
   const [selectedPhotoModal, setSelectedPhotoModal] = useState(null);
   const [allTigers, setAllTigers] = useState([]);
+  const [activeTab, setActiveTab] = useState('photos');
 
   useEffect(() => {
     const fetchTigerDetails = async () => {
