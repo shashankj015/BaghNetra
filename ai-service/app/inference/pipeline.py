@@ -12,6 +12,7 @@ from app.utils.config import (
     BLANK_MODEL_PATH,
     TIGER_DETECTOR_PATH,
     TIGER_IDENTIFIER_PATH,
+    TIGER_IDENTIFIER_ONNX_PATH,
     TIGER_EMBEDDINGS_PATH,
     BLANK_CONFIDENCE_THRESHOLD,
     BLANK_REVIEW_THRESHOLD,
@@ -46,6 +47,7 @@ class BaghNetraAIPipeline:
         )
         self.tiger_identifier = TigerIdentifier(
             model_path=TIGER_IDENTIFIER_PATH if TIGER_IDENTIFIER_PATH.exists() else None,
+            onnx_path=TIGER_IDENTIFIER_ONNX_PATH if TIGER_IDENTIFIER_ONNX_PATH.exists() else None,
             embeddings_path=TIGER_EMBEDDINGS_PATH if TIGER_EMBEDDINGS_PATH.exists() else None,
             device=DEVICE
         )
@@ -145,8 +147,9 @@ class BaghNetraAIPipeline:
         det_res = self.tiger_detector.detect(img, confidence_threshold=TIGER_CONFIDENCE_THRESHOLD)
         bbox = det_res.get("bbox", [0, 0, w, h])
         has_human = det_res.get("has_human", False)
+        detected_class = det_res.get("class", "none")
         
-        # 4. If tiger or animal is detected -> extract crop and run individual stripe identification
+        # 4. Triage according to detected class
         individual = None
         tiger_name = None
         id_confidence = 0.0
@@ -156,9 +159,13 @@ class BaghNetraAIPipeline:
         candidates = []
         embedding = []
         
-        is_wildlife = det_res["detected"] and det_res["class"] in ["tiger", "other_animal"]
-        
-        if is_wildlife:
+        if detected_class == "human":
+            # Human Detection (Forest patrol, field staff, tourists) -> Privacy Compliance Triage
+            tiger_detected = False
+            status = "DETECTED_HUMAN"
+            needs_review = False
+            has_human = True
+        elif detected_class == "tiger":
             tiger_crop = crop_bounding_box(img, bbox)
             flank_crop = isolate_flank_region(tiger_crop)
             
@@ -169,21 +176,20 @@ class BaghNetraAIPipeline:
                 low_threshold=l_id_thresh
             )
             
+            tiger_detected = True
             candidates = id_res.get("candidates", [])
             embedding = id_res.get("embedding", [])
             id_confidence = id_res.get("identification_confidence", 0.0)
-            
-            if id_res.get("status") in ["CONFIRMED_MATCH", "AMBIGUOUS_MATCH"] or det_res["class"] == "tiger":
-                tiger_detected = True
-                individual = id_res.get("individual")
-                tiger_name = id_res.get("tiger_name")
-                needs_review = id_res.get("needs_review", False)
-                status = id_res.get("status", "CONFIRMED_MATCH")
-            else:
-                status = f"DETECTED_{det_res['class'].upper()}"
-                needs_review = False
-        elif det_res["detected"] and det_res["class"] != "none":
-            status = f"DETECTED_{det_res['class'].upper()}"
+            individual = id_res.get("individual")
+            tiger_name = id_res.get("tiger_name")
+            needs_review = id_res.get("needs_review", False)
+            status = id_res.get("status", "CONFIRMED_MATCH")
+        elif detected_class == "other_animal":
+            tiger_detected = False
+            status = "NON_TIGER_ANIMAL"
+            needs_review = False
+        elif det_res["detected"] and detected_class != "none":
+            status = f"DETECTED_{detected_class.upper()}"
             needs_review = False
         else:
             status = "LOW_CONFIDENCE_UNCLASSIFIED"

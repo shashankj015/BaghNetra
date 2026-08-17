@@ -30,17 +30,27 @@ class TigerDetector:
     def __init__(self, model_path: Optional[Path] = None, device: str = "cpu"):
         self.device = device
         self.model = None
+        self.base_model = None
         self.is_loaded = False
         self.model_path = model_path
         
         if HAS_YOLO:
             try:
+                # 1. Custom fine-tuned wildlife/tiger detector
                 if model_path and Path(model_path).exists():
                     self.model = YOLO(str(model_path))
                     logger.info(f"Loaded custom fine-tuned YOLO Tiger Detector from {model_path}")
                 else:
                     self.model = YOLO("yolov8n.pt")
                     logger.info("Loaded base YOLOv8n detector model for wildlife triage")
+
+                # 2. Standard base YOLO for robust real-world person/human detection
+                base_path = Path(__file__).resolve().parent.parent.parent.parent / "yolov8n.pt"
+                if base_path.exists():
+                    self.base_model = YOLO(str(base_path))
+                else:
+                    self.base_model = YOLO("yolov8n.pt")
+                
                 self.is_loaded = True
             except Exception as e:
                 logger.warning(f"YOLO initialization notice: {e}")
@@ -63,68 +73,116 @@ class TigerDetector:
             return self._heuristic_detect(image, confidence_threshold)
             
         try:
-            results = self.model.predict(
-                source=image,
-                conf=confidence_threshold,
-                device=self.device,
-                verbose=False
-            )
-            
             detections = []
-            tiger_found = False
-            best_tiger_det = None
             has_human = False
-            
-            for result in results:
-                boxes = result.boxes
-                if boxes is None or len(boxes) == 0:
-                    continue
-                    
-                # Determine if model is custom 3-class model ({0: 'tiger', 1: 'other_animal', 2: 'human'})
+            best_human_det = None
+            best_tiger_det = None
+            best_animal_det = None
+
+            # 1. Check for real-world humans using Base YOLO COCO model (Class 0: Person)
+            if self.base_model is not None:
+                try:
+                    base_res = self.base_model.predict(
+                        source=image,
+                        conf=max(0.30, confidence_threshold),
+                        device=self.device,
+                        verbose=False
+                    )
+                    for r in base_res:
+                        if r.boxes is not None:
+                            for box in r.boxes:
+                                cls_id = int(box.cls[0].item())
+                                conf = float(box.conf[0].item())
+                                xyxy = box.xyxy[0].cpu().numpy().tolist()
+                                if cls_id == 0 and conf >= 0.35: # COCO person
+                                    det = {
+                                        "class": "human",
+                                        "confidence": round(conf, 4),
+                                        "bbox": [round(coord, 2) for coord in xyxy]
+                                    }
+                                    detections.append(det)
+                                    has_human = True
+                                    if best_human_det is None or conf > best_human_det["confidence"]:
+                                        best_human_det = det
+                except Exception as e:
+                    logger.debug(f"Base YOLO person check notice: {e}")
+
+            # 2. Run custom fine-tuned Wildlife/Tiger Detector
+            if self.model is not None:
+                results = self.model.predict(
+                    source=image,
+                    conf=confidence_threshold,
+                    device=self.device,
+                    verbose=False
+                )
+                
                 is_custom_model = (
                     hasattr(self.model, "names") and
                     isinstance(self.model.names, dict) and
                     self.model.names.get(0) == "tiger"
                 )
                 
-                for box in boxes:
-                    cls_id = int(box.cls[0].item())
-                    conf = float(box.conf[0].item())
-                    xyxy = box.xyxy[0].cpu().numpy().tolist()
-                    
-                    if is_custom_model:
-                        # Custom 3-Class Pench Detector: 0=tiger, 1=other_animal, 2=human
-                        if cls_id == 0:
-                            class_name = "tiger"
-                        elif cls_id == 2:
-                            class_name = "human"
-                            has_human = True
-                        else:
-                            class_name = "other_animal"
-                    else:
-                        # Fallback standard COCO 80-class model
-                        # COCO: 0=person, 15=cat, 16=dog, 17=horse, 18=sheep, 19=cow, 20=elephant, 21=bear, 22=zebra, 23=giraffe
-                        if cls_id == 0:
-                            class_name = "human"
-                            has_human = True
-                        elif cls_id in [15, 16, 21, 22]: # Felines, carnivores, and striped quadrupeds (Tiger Proxy in COCO)
-                            class_name = "tiger"
-                        else:
-                            class_name = "other_animal"
+                for result in results:
+                    boxes = result.boxes
+                    if boxes is None or len(boxes) == 0:
+                        continue
                         
-                    det = {
-                        "class": class_name,
-                        "confidence": round(conf, 4),
-                        "bbox": [round(coord, 2) for coord in xyxy]
-                    }
-                    detections.append(det)
-                    
-                    if class_name == "tiger":
-                        if best_tiger_det is None or conf > best_tiger_det["confidence"]:
-                            best_tiger_det = det
-                            tiger_found = True
+                    for box in boxes:
+                        cls_id = int(box.cls[0].item())
+                        conf = float(box.conf[0].item())
+                        xyxy = box.xyxy[0].cpu().numpy().tolist()
+                        
+                        if is_custom_model:
+                            # Custom 3-Class Pench Detector: 0=tiger, 1=other_animal, 2=human
+                            if cls_id == 0:
+                                class_name = "tiger"
+                            elif cls_id == 2:
+                                class_name = "human"
+                                has_human = True
+                            else:
+                                class_name = "other_animal"
+                        else:
+                            if cls_id == 0:
+                                class_name = "human"
+                                has_human = True
+                            elif cls_id in [15, 16, 21, 22]:
+                                class_name = "tiger"
+                            else:
+                                class_name = "other_animal"
                             
-            if tiger_found and best_tiger_det:
+                        det = {
+                            "class": class_name,
+                            "confidence": round(conf, 4),
+                            "bbox": [round(coord, 2) for coord in xyxy]
+                        }
+                        detections.append(det)
+                        
+                        if class_name == "human":
+                            has_human = True
+                            if best_human_det is None or conf > best_human_det["confidence"]:
+                                best_human_det = det
+                        elif class_name == "tiger":
+                            if best_tiger_det is None or conf > best_tiger_det["confidence"]:
+                                best_tiger_det = det
+                        elif class_name == "other_animal":
+                            if best_animal_det is None or conf > best_animal_det["confidence"]:
+                                best_animal_det = det
+
+            # 3. Class Arbitration
+            # Priority A: If a verified human is present and no overwhelming tiger detection exists, classify as human
+            if best_human_det and (not best_tiger_det or best_human_det["confidence"] >= (best_tiger_det["confidence"] - 0.15)):
+                return {
+                    "detected": True,
+                    "class": "human",
+                    "confidence": best_human_det["confidence"],
+                    "bbox": best_human_det["bbox"],
+                    "all_detections": detections,
+                    "has_human": True,
+                    "model": "YOLOv8-Tiger",
+                    "version": "2.0.0"
+                }
+            # Priority B: If confident tiger is detected without human conflict
+            elif best_tiger_det:
                 return {
                     "detected": True,
                     "class": "tiger",
@@ -133,7 +191,19 @@ class TigerDetector:
                     "all_detections": detections,
                     "has_human": has_human,
                     "model": "YOLOv8-Tiger",
-                    "version": "1.0.0"
+                    "version": "2.0.0"
+                }
+            # Priority C: Other wildlife
+            elif best_animal_det:
+                return {
+                    "detected": True,
+                    "class": "other_animal",
+                    "confidence": best_animal_det["confidence"],
+                    "bbox": best_animal_det["bbox"],
+                    "all_detections": detections,
+                    "has_human": has_human,
+                    "model": "YOLOv8-Tiger",
+                    "version": "2.0.0"
                 }
             elif len(detections) > 0:
                 top_det = max(detections, key=lambda d: d["confidence"])
@@ -143,9 +213,9 @@ class TigerDetector:
                     "confidence": top_det["confidence"],
                     "bbox": top_det["bbox"],
                     "all_detections": detections,
-                    "has_human": has_human,
+                    "has_human": has_human or (top_det["class"] == "human"),
                     "model": "YOLOv8-Tiger",
-                    "version": "1.0.0"
+                    "version": "2.0.0"
                 }
             else:
                 return {
@@ -156,7 +226,7 @@ class TigerDetector:
                     "all_detections": [],
                     "has_human": False,
                     "model": "YOLOv8-Tiger",
-                    "version": "1.0.0"
+                    "version": "2.0.0"
                 }
         except Exception as e:
             logger.error(f"YOLO detection exception: {e}")
