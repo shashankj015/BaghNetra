@@ -1,0 +1,12 @@
+const express = require('express');
+const router = express.Router();
+const tigerController = require('../controllers/tigerController');
+
+router.get('/', tigerController.getAllTigers);
+router.get('/overlaps', tigerController.getTerritorialOverlaps);
+router.get('/:id', tigerController.getTigerById);
+router.post('/', tigerController.createTiger);
+router.put('/:id', tigerController.updateTiger);
+router.post('/:id/regenerate-occupancy', tigerController.regenerateOccupancy);
+
+module.exports = router;

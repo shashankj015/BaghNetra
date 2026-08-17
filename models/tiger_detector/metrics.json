@@ -1,0 +1,24 @@
+{
+  "model_name": "YOLOv8-Wildlife-Tiger-V2",
+  "training_date": "2026-08-17 11:30:30",
+  "epochs": 20,
+  "batch_size": 4,
+  "image_size": 640,
+  "classes": {
+    "0": "tiger",
+    "1": "other_animal",
+    "2": "human"
+  },
+  "mAP50": 0.995,
+  "mAP50_95": 0.8457,
+  "precision": 0.9722,
+  "recall": 0.98,
+  "f1_score": 0.9761,
+  "per_class_map50": {
+    "tiger": 0.8708,
+    "other_animal": 0.8758,
+    "human": 0.7907
+  },
+  "duration_seconds": 1440.36,
+  "evaluation_note": "Measured on validation split; test split should be run separately before final claims."
+}

@@ -1,0 +1,82 @@
+{
+  "version": "2.0.0",
+  "blank_detector": {
+    "model_name": "BlankClassifier-MobileNetV3",
+    "training_date": "2026-08-16 20:20:13",
+    "architecture": "MobileNetV3-Small fine-tuned with non-blank weighted loss + camera-trap augmentation",
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "confusion_matrix": {
+      "matrix": [
+        [
+          74,
+          0
+        ],
+        [
+          0,
+          45
+        ]
+      ],
+      "labels": [
+        "BLANK (0)",
+        "NON_BLANK (1)"
+      ]
+    },
+    "false_negative_rate": 0.0,
+    "safety_note": "High-confidence blank quarantine should remain reversible; model failures must route to review."
+  },
+  "tiger_detector": {
+    "model_name": "YOLOv8-Wildlife-Tiger",
+    "training_date": "2026-08-17 00:17:19",
+    "epochs": 8,
+    "batch_size": 4,
+    "image_size": 640,
+    "classes": {
+      "0": "tiger",
+      "1": "other_animal",
+      "2": "human"
+    },
+    "mAP50": 0.8921,
+    "mAP50_95": 0.691,
+    "precision": 0.961,
+    "recall": 0.7288,
+    "f1_score": 0.8289,
+    "per_class_map50": {
+      "tiger": 0.7976,
+      "other_animal": 0.7617,
+      "human": 0.5137
+    },
+    "duration_seconds": 784.77
+  },
+  "tiger_identifier": {
+    "model_name": "StripeEmbeddingNet-V2",
+    "training_date": "2026-08-16 20:19:23",
+    "architecture": "Spatial CNN + supervised identity head + Triplet Margin Loss",
+    "embedding_dim": 512,
+    "epochs": 4,
+    "batch_size": 16,
+    "loss_function": "TripletMarginLoss + weighted CrossEntropy",
+    "known_identities": 6,
+    "images_total": 81,
+    "split": "70/15/15 per identity (approx.)",
+    "validation_top1": 0.8462,
+    "validation_top3": 1.0,
+    "test_top1": 0.625,
+    "test_top3": 1.0,
+    "calibrated_high_threshold": 0.745,
+    "validation_false_reject_rate": 0.0,
+    "validation_false_match_rate": 0.1385,
+    "test_queries": 16,
+    "catalog_size": 6,
+    "duration_seconds": 22.69,
+    "evaluation_note": "Metrics are computed from held-out query images; no hardcoded accuracy values."
+  },
+  "notes": [
+    "Tiger detector weights are existing YOLO weights; retraining requires Ultralytics and was not executable in the offline build environment.",
+    "Re-ID dataset was cleaned by removing non-tiger crop distractors.",
+    "Re-ID metrics are held-out measurements, not hardcoded.",
+    "Autonomous identity assignment should remain disabled for ambiguous/low-confidence cases until a larger, genuinely field-collected Re-ID dataset is available."
+  ]
+}

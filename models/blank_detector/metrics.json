@@ -1,0 +1,27 @@
+{
+  "model_name": "BlankClassifier-MobileNetV3",
+  "training_date": "2026-08-16 20:20:13",
+  "architecture": "MobileNetV3-Small fine-tuned with non-blank weighted loss + camera-trap augmentation",
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1_score": 1.0,
+  "confusion_matrix": {
+    "matrix": [
+      [
+        74,
+        0
+      ],
+      [
+        0,
+        45
+      ]
+    ],
+    "labels": [
+      "BLANK (0)",
+      "NON_BLANK (1)"
+    ]
+  },
+  "false_negative_rate": 0.0,
+  "safety_note": "High-confidence blank quarantine should remain reversible; model failures must route to review."
+}

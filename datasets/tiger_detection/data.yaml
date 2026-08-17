@@ -1,0 +1,10 @@
+path: C:/VS Code/hackathon/baghnetra-main/datasets/tiger_detection
+
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: tiger
+  1: other_animal
+  2: human

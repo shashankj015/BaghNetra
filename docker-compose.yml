@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: baghnetra-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - baghnetra-net
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: baghnetra-ai
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      - ./uploads:/app/uploads
+      - ./quarantine:/app/quarantine
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - UPLOADS_DIR=/app/uploads
+      - QUARANTINE_DIR=/app/quarantine
+    networks:
+      - baghnetra-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: baghnetra-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+      - ai-service
+    volumes:
+      - ./uploads:/app/uploads
+      - ./quarantine:/app/quarantine
+      - ./sample-data:/app/sample-data
+    environment:
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/baghnetra
+      - AI_SERVICE_URL=http://ai-service:8000
+      - JWT_SECRET=baghnetra_super_secret_jwt_key_pench_2026
+      - CLIENT_URL=http://localhost:5173
+    networks:
+      - baghnetra-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: baghnetra-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    networks:
+      - baghnetra-net
+
+networks:
+  baghnetra-net:
+    driver: bridge
+
+volumes:
+  mongodb_data:
