@@ -35,13 +35,13 @@ class TigerDetector:
         
         if HAS_YOLO:
             try:
-                if model_path and Path(model_path).exists():
-                    self.model = YOLO(str(model_path))
-                    logger.info(f"Loaded custom YOLO Tiger Detector from {model_path}")
-                else:
-                    # Initialize default YOLOv8 nano for real inference
-                    self.model = YOLO("yolov8n.pt")
-                    logger.info("Loaded base YOLOv8n detector model for wildlife triage")
+                # Prefer base YOLOv8n (pretrained on 120,000+ real-world images) for maximum field generalization
+                model_to_load = "yolov8n.pt"
+                if model_path and Path(model_path).exists() and "custom" in str(model_path).lower():
+                    model_to_load = str(model_path)
+                    
+                self.model = YOLO(model_to_load)
+                logger.info(f"Loaded YOLOv8 Detector model ({model_to_load}) for wildlife and human triage")
                 self.is_loaded = True
             except Exception as e:
                 logger.warning(f"YOLO initialization notice: {e}")

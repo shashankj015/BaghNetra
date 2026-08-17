@@ -20,10 +20,10 @@ TIGER_IDENTIFIER_ONNX_PATH = MODELS_DIR / "tiger_identifier" / "tiger_reid_resne
 TIGER_EMBEDDINGS_PATH = MODELS_DIR / "tiger_identifier" / "embeddings.json"
 TIGER_IDENTIFIER_METRICS_PATH = MODELS_DIR / "tiger_identifier" / "metrics.json"
 
-# AI Pipeline Thresholds (Calibrated from ATRW Re-ID Benchmark)
+# AI Pipeline Thresholds (Calibrated for Pretrained YOLO & Field Robustness)
 BLANK_CONFIDENCE_THRESHOLD = float(os.getenv("AI_BLANK_THRESHOLD", "0.95"))
-BLANK_REVIEW_THRESHOLD = float(os.getenv("AI_BLANK_REVIEW_THRESHOLD", "0.50"))
-TIGER_CONFIDENCE_THRESHOLD = float(os.getenv("AI_TIGER_THRESHOLD", "0.35"))
+BLANK_REVIEW_THRESHOLD = float(os.getenv("AI_BLANK_REVIEW_THRESHOLD", "0.80"))
+TIGER_CONFIDENCE_THRESHOLD = float(os.getenv("AI_TIGER_THRESHOLD", "0.25"))
 HIGH_IDENTIFICATION_THRESHOLD = float(os.getenv("AI_HIGH_THRESHOLD", "0.525")) # Calibrated for FAR <= 1%
 LOW_IDENTIFICATION_THRESHOLD = float(os.getenv("AI_LOW_THRESHOLD", "0.350"))  # Review / Ambiguous band
 

@@ -143,20 +143,22 @@ class BaghNetraAIPipeline:
             
         # 3. Object Detection (Tiger / Other Animal / Human)
         det_res = self.tiger_detector.detect(img, confidence_threshold=TIGER_CONFIDENCE_THRESHOLD)
-        tiger_detected = (det_res["class"] == "tiger" and det_res["detected"])
         bbox = det_res.get("bbox", [0, 0, w, h])
         has_human = det_res.get("has_human", False)
         
-        # 4. If tiger is detected -> extract crop and run individual stripe identification
+        # 4. If tiger or animal is detected -> extract crop and run individual stripe identification
         individual = None
         tiger_name = None
         id_confidence = 0.0
         needs_review = False
+        tiger_detected = False
         status = "NON_TIGER_ANIMAL"
         candidates = []
         embedding = []
         
-        if tiger_detected:
+        is_wildlife = det_res["detected"] and det_res["class"] in ["tiger", "other_animal"]
+        
+        if is_wildlife:
             tiger_crop = crop_bounding_box(img, bbox)
             flank_crop = isolate_flank_region(tiger_crop)
             
@@ -167,13 +169,19 @@ class BaghNetraAIPipeline:
                 low_threshold=l_id_thresh
             )
             
-            individual = id_res.get("individual")
-            tiger_name = id_res.get("tiger_name")
-            id_confidence = id_res.get("identification_confidence", 0.0)
-            needs_review = id_res.get("needs_review", False)
-            status = id_res.get("status", "CONFIRMED_MATCH")
             candidates = id_res.get("candidates", [])
             embedding = id_res.get("embedding", [])
+            id_confidence = id_res.get("identification_confidence", 0.0)
+            
+            if id_res.get("status") in ["CONFIRMED_MATCH", "AMBIGUOUS_MATCH"] or det_res["class"] == "tiger":
+                tiger_detected = True
+                individual = id_res.get("individual")
+                tiger_name = id_res.get("tiger_name")
+                needs_review = id_res.get("needs_review", False)
+                status = id_res.get("status", "CONFIRMED_MATCH")
+            else:
+                status = f"DETECTED_{det_res['class'].upper()}"
+                needs_review = False
         elif det_res["detected"] and det_res["class"] != "none":
             status = f"DETECTED_{det_res['class'].upper()}"
             needs_review = False
