@@ -1,0 +1,146 @@
+[
+  {
+    "fileName": "IMG_1000_BLANK.jpg",
+    "stationId": "PTR-C-01",
+    "stationName": "Karmajhiri Core Waterhole",
+    "lat": 21.6842,
+    "lon": 79.3124,
+    "expectedClass": "BLANK"
+  },
+  {
+    "fileName": "IMG_1001_BLANK.jpg",
+    "stationId": "PTR-C-03",
+    "stationName": "Gumtara Core Meadow",
+    "lat": 21.7214,
+    "lon": 79.289,
+    "expectedClass": "BLANK"
+  },
+  {
+    "fileName": "IMG_1002_TIGER_BT003.jpg",
+    "stationId": "PTR-C-02",
+    "stationName": "Turia Gate River Crossing",
+    "lat": 21.6521,
+    "lon": 79.3451,
+    "expectedClass": "BT003"
+  },
+  {
+    "fileName": "IMG_1003_CHITAL.jpg",
+    "stationId": "PTR-C-03",
+    "stationName": "Gumtara Core Meadow",
+    "lat": 21.7214,
+    "lon": 79.289,
+    "expectedClass": "CHITAL"
+  },
+  {
+    "fileName": "IMG_1004_BLANK.jpg",
+    "stationId": "PTR-C-03",
+    "stationName": "Gumtara Core Meadow",
+    "lat": 21.7214,
+    "lon": 79.289,
+    "expectedClass": "BLANK"
+  },
+  {
+    "fileName": "IMG_1005_TIGER_BT003.jpg",
+    "stationId": "PTR-C-03",
+    "stationName": "Gumtara Core Meadow",
+    "lat": 21.7214,
+    "lon": 79.289,
+    "expectedClass": "BT003"
+  },
+  {
+    "fileName": "IMG_1006_NEW_TIGER.jpg",
+    "stationId": "PTR-C-03",
+    "stationName": "Gumtara Core Meadow",
+    "lat": 21.7214,
+    "lon": 79.289,
+    "expectedClass": "UNKNOWN_CANDIDATE"
+  },
+  {
+    "fileName": "IMG_1007_BLANK.jpg",
+    "stationId": "PTR-C-02",
+    "stationName": "Turia Gate River Crossing",
+    "lat": 21.6521,
+    "lon": 79.3451,
+    "expectedClass": "BLANK"
+  },
+  {
+    "fileName": "IMG_1008_TIGER_BT003.jpg",
+    "stationId": "PTR-C-02",
+    "stationName": "Turia Gate River Crossing",
+    "lat": 21.6521,
+    "lon": 79.3451,
+    "expectedClass": "BT003"
+  },
+  {
+    "fileName": "IMG_1009_CHITAL.jpg",
+    "stationId": "PTR-C-01",
+    "stationName": "Karmajhiri Core Waterhole",
+    "lat": 21.6842,
+    "lon": 79.3124,
+    "expectedClass": "CHITAL"
+  },
+  {
+    "fileName": "IMG_1010_BLANK.jpg",
+    "stationId": "PTR-C-01",
+    "stationName": "Karmajhiri Core Waterhole",
+    "lat": 21.6842,
+    "lon": 79.3124,
+    "expectedClass": "BLANK"
+  },
+  {
+    "fileName": "IMG_1011_TIGER_BT003.jpg",
+    "stationId": "PTR-C-02",
+    "stationName": "Turia Gate River Crossing",
+    "lat": 21.6521,
+    "lon": 79.3451,
+    "expectedClass": "BT003"
+  },
+  {
+    "fileName": "IMG_1012_NEW_TIGER.jpg",
+    "stationId": "PTR-C-01",
+    "stationName": "Karmajhiri Core Waterhole",
+    "lat": 21.6842,
+    "lon": 79.3124,
+    "expectedClass": "UNKNOWN_CANDIDATE"
+  },
+  {
+    "fileName": "IMG_1013_BLANK.jpg",
+    "stationId": "PTR-C-01",
+    "stationName": "Karmajhiri Core Waterhole",
+    "lat": 21.6842,
+    "lon": 79.3124,
+    "expectedClass": "BLANK"
+  },
+  {
+    "fileName": "IMG_1014_TIGER_BT003.jpg",
+    "stationId": "PTR-C-04",
+    "stationName": "Alikatta Fireline Junction",
+    "lat": 21.698,
+    "lon": 79.328,
+    "expectedClass": "BT003"
+  },
+  {
+    "fileName": "IMG_1015_NEW_TIGER.jpg",
+    "stationId": "PTR-C-02",
+    "stationName": "Turia Gate River Crossing",
+    "lat": 21.6521,
+    "lon": 79.3451,
+    "expectedClass": "UNKNOWN_CANDIDATE"
+  },
+  {
+    "fileName": "IMG_1016_PATROL.jpg",
+    "stationId": "PTR-C-01",
+    "stationName": "Karmajhiri Core Waterhole",
+    "lat": 21.6842,
+    "lon": 79.3124,
+    "expectedClass": "HUMAN"
+  },
+  {
+    "fileName": "IMG_1017_NEW_TIGER.jpg",
+    "stationId": "PTR-C-02",
+    "stationName": "Turia Gate River Crossing",
+    "lat": 21.6521,
+    "lon": 79.3451,
+    "expectedClass": "UNKNOWN_CANDIDATE"
+  }
+]

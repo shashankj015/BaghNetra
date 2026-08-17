@@ -1,0 +1,17 @@
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# Runtime uploads
+uploads/
+quarantine/
