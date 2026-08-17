@@ -1,11 +1,42 @@
+const fs = require('fs');
+const path = require('path');
 const Tiger = require('../models/Tiger');
 const MovementRecord = require('../models/MovementRecord');
 const Image = require('../models/Image');
 const occupancyService = require('../services/occupancyService');
 const aiClient = require('../services/aiServiceClient');
 
+// Auto-seed helper
+async function ensureDatasetTigers() {
+  const count = await Tiger.countDocuments();
+  let needSeed = count === 0;
+  if (!needSeed) {
+    const sample = await Tiger.findOne({});
+    if (!sample || !sample.embedding || sample.embedding.length !== 512) {
+      needSeed = true;
+    }
+  }
+  if (needSeed) {
+    const jsonPath = path.join(__dirname, '../utils/dataset_tigers.json');
+    if (fs.existsSync(jsonPath)) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+        await Tiger.deleteMany({});
+        await Tiger.insertMany(raw);
+        console.log(`[TigerController] Auto-seeded ${raw.length} tigers with 512-D embeddings from dataset_tigers.json`);
+        
+        // Sync with AI service
+        await aiClient.syncReferenceEmbeddings(raw);
+      } catch (err) {
+        console.error('[TigerController] Auto-seed error:', err);
+      }
+    }
+  }
+}
+
 exports.getAllTigers = async (req, res) => {
   try {
+    await ensureDatasetTigers();
     const { status, sex } = req.query;
     const filter = {};
     if (status) filter.status = status;
@@ -114,6 +145,78 @@ exports.regenerateOccupancy = async (req, res) => {
   try {
     const tiger = await occupancyService.regenerateTigerOccupancy(req.params.id.toUpperCase());
     res.json({ message: 'Occupancy recalculated', tiger });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.enrollTigerFromImage = async (req, res) => {
+  try {
+    const { 
+      tigerId, 
+      name, 
+      sex, 
+      estimatedAge, 
+      status, 
+      embedding, 
+      imagePath, 
+      imageId, 
+      cameraStation, 
+      latitude, 
+      longitude,
+      healthNotes 
+    } = req.body;
+
+    let finalId = tigerId;
+    if (!finalId) {
+      const count = await Tiger.countDocuments();
+      finalId = `TIGER_${(count + 1).toString().padStart(3, '0')}`;
+    } else {
+      finalId = finalId.trim().toUpperCase();
+    }
+
+    const existing = await Tiger.findOne({ tigerId: finalId });
+    if (existing) {
+      return res.status(400).json({ error: `Tiger ID ${finalId} already exists in database.` });
+    }
+
+    const newTiger = new Tiger({
+      tigerId: finalId,
+      name: name || `Wild Tiger #${finalId.replace(/[^0-9]/g, '') || finalId}`,
+      sex: sex || 'UNKNOWN',
+      estimatedAge: estimatedAge ? Number(estimatedAge) : 3.5,
+      status: status || 'RESIDENT',
+      representativeImage: imagePath || '',
+      referenceImages: imagePath ? [imagePath] : [],
+      flankCropImages: imagePath ? [imagePath] : [],
+      embeddings: embedding || [],
+      totalCaptures: 1,
+      healthNotes: healthNotes || 'Newly registered wild tiger individual from camera-trap triage.',
+      activityCentroid: {
+        latitude: latitude || 21.6840,
+        longitude: longitude || 79.3250
+      },
+      occupiedArea: 25.0
+    });
+    await newTiger.save();
+
+    // If an imageId was provided, update the Image doc in MongoDB
+    if (imageId) {
+      await Image.findByIdAndUpdate(imageId, {
+        tigerId: finalId,
+        reviewStatus: 'AUTO_CONFIRMED',
+        needsReview: false
+      });
+    }
+
+    // Sync all tiger prototype embeddings with AI engine in memory
+    const allTigers = await Tiger.find({});
+    await aiClient.syncReferenceEmbeddings(allTigers);
+
+    res.status(201).json({
+      message: `Tiger ${finalId} successfully enrolled into database!`,
+      tiger: newTiger
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

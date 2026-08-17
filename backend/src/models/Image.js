@@ -83,7 +83,9 @@ const ImageSchema = new mongoose.Schema({
   candidates: [{
     tigerId: String,
     name: String,
-    similarity: Number
+    similarity: Number,
+    representativeImage: String,
+    totalCaptures: Number
   }],
   modelVersion: {
     type: String,

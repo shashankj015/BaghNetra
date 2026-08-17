@@ -49,7 +49,7 @@ export default function Navbar() {
 
         {/* Quick Ingest Button */}
         <Link 
-          to="/cameras" 
+          to="/ingest" 
           className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-md shadow-primary/20 hover:shadow-primary/30 hover:scale-[1.02]"
         >
           <Plus className="w-3.5 h-3.5 stroke-[3]" />

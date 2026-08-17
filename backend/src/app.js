@@ -24,10 +24,14 @@ app.use(morgan('dev'));
 const UPLOADS_DIR = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname, '../../uploads'));
 const QUARANTINE_DIR = path.resolve(process.env.QUARANTINE_DIR || path.join(__dirname, '../../quarantine'));
 const SAMPLE_DIR = path.resolve(path.join(__dirname, '../../sample-data'));
+const DATASETS_DIR = path.resolve(path.join(__dirname, '../../datasets'));
+const REID_DIR = path.resolve(path.join(__dirname, '../../re id'));
 
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use('/quarantine', express.static(QUARANTINE_DIR));
 app.use('/sample-data', express.static(SAMPLE_DIR));
+app.use('/datasets', express.static(DATASETS_DIR));
+app.use('/re-id', express.static(REID_DIR));
 
 // API Routes
 app.use('/api/auth', authRoutes);

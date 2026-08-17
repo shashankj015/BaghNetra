@@ -9,6 +9,7 @@ router.post('/quarantine/purge', imageController.purgeQuarantine);
 router.post('/quarantine/:id/restore', imageController.restoreQuarantine);
 router.get('/analytics', imageController.getDashboardAnalytics);
 router.get('/:id', imageController.getImageById);
+router.get('/:id/file', imageController.serveImageFile);
 router.post('/upload', upload.single('file'), imageController.uploadSingleImage);
 
 module.exports = router;

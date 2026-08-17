@@ -63,7 +63,11 @@ class AIServiceClient {
         tigers: tigers.map(t => ({
           tigerId: t.tigerId,
           name: t.name,
-          embedding: t.embeddings || []
+          sex: t.sex,
+          status: t.status,
+          representativeImage: t.representativeImage,
+          totalCaptures: t.totalCaptures || (t.referenceImages ? t.referenceImages.length : 1),
+          embedding: (t.embeddings && t.embeddings.length > 0) ? t.embeddings : (t.embedding || [])
         }))
       };
       const res = await this.client.post('/ai/sync-embeddings', payload);

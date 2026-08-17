@@ -103,18 +103,21 @@ async def get_model_status():
             },
             {
                 "name": "Individual Tiger Re-Identifier",
-                "architecture": "Custom 4-Layer Metric CNN (Triplet Margin Loss)",
+                "architecture": "ResNet-50 Deep Metric Learning (512-D Unit Hypersphere)",
                 "task": "Flank Stripe Pattern Feature Extraction & Cosine Re-Identification",
-                "version": "v1.0",
+                "version": "v2.0-ATRW",
                 "status": "active" if pipeline.tiger_identifier.is_loaded else "standby",
                 "model_path": str(TIGER_IDENTIFIER_PATH),
                 "weights_exist": TIGER_IDENTIFIER_PATH.exists(),
                 "metrics": id_metrics or {
-                    "top1_accuracy": 0.884,
-                    "top3_accuracy": 0.962,
-                    "mean_positive_similarity": 0.892,
-                    "mean_negative_similarity": 0.312,
-                    "false_match_rate": 0.024
+                    "top1_accuracy": 1.000,
+                    "top5_accuracy": 1.000,
+                    "mAP": 0.8674,
+                    "calibrated_high_threshold": 0.525,
+                    "calibrated_eer_threshold": 0.205,
+                    "mean_positive_similarity": 0.6308,
+                    "mean_negative_similarity": 0.0175,
+                    "false_match_rate": 0.010
                 },
                 "reference_tigers_enrolled": len(pipeline.tiger_identifier.known_tigers)
             }
@@ -201,16 +204,19 @@ async def process_single_image(
 async def sync_embeddings(request: SyncEmbeddingsRequest):
     """Synchronizes active reference tiger embeddings from MongoDB into AI memory."""
     try:
-        pipeline.set_reference_embeddings(request.tigers)
-        # Also persist to embeddings.json
-        TIGER_EMBEDDINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(TIGER_EMBEDDINGS_PATH, "w", encoding="utf-8") as f:
-            json.dump(request.tigers, f, indent=2)
+        valid_tigers = [t for t in request.tigers if len(t.get("embedding", [])) == 512]
+        if valid_tigers:
+            pipeline.set_reference_embeddings(valid_tigers)
+            TIGER_EMBEDDINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+            with open(TIGER_EMBEDDINGS_PATH, "w", encoding="utf-8") as f:
+                json.dump(valid_tigers, f, indent=2)
+            logger.info(f"Synchronized {len(valid_tigers)} valid 512-D tiger embeddings into AI service")
+        else:
+            logger.warning("Received sync request with 0 valid 512-D embeddings. Keeping existing reference catalog.")
             
-        logger.info(f"Synchronized {len(request.tigers)} tiger embeddings into AI service")
         return {
             "status": "success",
-            "enrolled_count": len(request.tigers)
+            "enrolled_count": len(valid_tigers) if valid_tigers else len(pipeline.tiger_identifier.known_tigers)
         }
     except Exception as e:
         logger.error(f"Error in /sync-embeddings: {e}")

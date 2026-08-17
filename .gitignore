@@ -1,25 +1,77 @@
-# Node
+# ==============================================================================
+# BaghNetra Git Ignore Rules
+# ==============================================================================
+
+# Dependencies
 node_modules/
+*/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Python
-__pycache__/
+# Python Virtual Environments & Bytecode
+.venv/
+venv/
+env/
+ENV/
 *.py[cod]
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+.pytest_cache/
+.coverage
 
-# Runtime/generated data
+# Heavy Model Checkpoints & Weights (>50MB)
+checkpoints/
+experiments/
+models/tiger_identifier/best_model.pt
+*.pth
+*.onnx.data
+*.bin
+*.h5
+*.ckpt
+*.safetensors
+
+# Heavy Datasets & Raw Image Dumps (>100MB)
+re id/
+re-id/
+gallery/
+data/raw/
+data/processed/
+
+# Runtime Uploads, Quarantine & Local Logs
 uploads/
 quarantine/
+*.log
+logs/
+.system_generated/
 
-# Environment
+# Frontend Build Artifacts
+dist/
+build/
+frontend/dist/
+frontend/build/
+
+# Environment Configurations
 .env
 .env.*
+!.env.example
 
-# Local databases
+# Local Databases
 *.db
 *.sqlite
 *.sqlite3
 
-# OS
+# Operating System & Editor Metadata
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo

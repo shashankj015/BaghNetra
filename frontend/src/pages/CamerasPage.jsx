@@ -20,6 +20,7 @@ export default function CamerasPage() {
   const [selectedStation, setSelectedStation] = useState('PTR-C-01');
   const [isProcessing, setIsProcessing] = useState(false);
   const [ingestStep, setIngestStep] = useState(0); // 0: Idle, 1: Scan, 2: Validate, 3: Timestamp, 4: Duplicates, 5: Processing
+  const [ingestedImages, setIngestedImages] = useState([]);
   
   useEffect(() => {
     const fetchStations = async () => {
@@ -44,6 +45,15 @@ export default function CamerasPage() {
     fetchStations();
   }, []);
 
+  const fetchRecentIngestedImages = async () => {
+    try {
+      const res = await api.get('/images?limit=8');
+      setIngestedImages(res.data.images || []);
+    } catch (err) {
+      console.warn("Could not fetch ingested images:", err);
+    }
+  };
+
   const handleStartIngest = async (e) => {
     e.preventDefault();
     if (!folderPath) return;
@@ -58,15 +68,17 @@ export default function CamerasPage() {
 
     try {
       await api.post('/runs/start', { folderPath, stationId: selectedStation, options: { batchSize: 4 } });
-      setTimeout(() => {
+      setTimeout(async () => {
         setIsProcessing(false);
         setIngestStep(6); // Done
+        await fetchRecentIngestedImages();
       }, 5000);
     } catch (err) {
       console.warn("Real API failed, simulating processing.");
-      setTimeout(() => {
+      setTimeout(async () => {
         setIsProcessing(false);
         setIngestStep(6);
+        await fetchRecentIngestedImages();
       }, 6000);
     }
   };
@@ -184,15 +196,68 @@ export default function CamerasPage() {
             </div>
 
             {ingestStep === 6 && (
-              <div className="mt-8 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 flex items-center justify-between animate-in fade-in slide-in-from-bottom-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-6 h-6 text-emerald-500" />
-                  <div>
-                    <div className="text-sm font-bold text-emerald-500">Ingestion Successful</div>
-                    <div className="text-xs text-muted-foreground">Results are now available in the Overview dashboard.</div>
+              <div className="mt-8 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-6 h-6 text-emerald-500" />
+                    <div>
+                      <div className="text-sm font-bold text-emerald-500">Ingestion & Neural Triage Complete</div>
+                      <div className="text-xs text-muted-foreground">Processed camera trap frames with ResNet-50 stripe biometric matching.</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a href="/ingest" className="text-xs font-bold text-primary hover:text-primary/90 bg-primary/10 px-3 py-1.5 rounded-md border border-primary/30">
+                      View Ingestion Gallery
+                    </a>
+                    <button onClick={() => setIngestStep(0)} className="text-xs font-bold text-muted-foreground hover:text-foreground bg-white/5 px-3 py-1.5 rounded-md">
+                      New Ingestion
+                    </button>
                   </div>
                 </div>
-                <button onClick={() => setIngestStep(0)} className="text-xs font-bold text-emerald-500 hover:text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-md">New Ingestion</button>
+
+                {/* Ingested Images Preview Grid */}
+                {ingestedImages.length > 0 && (
+                  <div className="flex flex-col gap-2 mt-2">
+                    <div className="text-xs font-mono font-bold text-muted-foreground uppercase">
+                      Recently Processed Camera Trap Captures
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {ingestedImages.map(img => (
+                        <div key={img._id} className="bg-card border border-border rounded-xl overflow-hidden flex flex-col group">
+                          <div className="relative aspect-[4/3] bg-black">
+                            <img
+                              src={`http://localhost:5000/api/images/${img._id}/file`}
+                              alt={img.fileName}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=500&q=80';
+                              }}
+                            />
+                            <div className="absolute top-1.5 left-1.5">
+                              {img.tigerDetected ? (
+                                <span className="bg-emerald-600/90 text-white text-[9px] font-mono font-bold px-1.5 py-0.5 rounded">
+                                  {img.tigerId ? `TIGER ${img.tigerId}` : 'TIGER'}
+                                </span>
+                              ) : img.blank ? (
+                                <span className="bg-black/70 text-gray-300 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded">
+                                  BLANK
+                                </span>
+                              ) : (
+                                <span className="bg-sky-600/90 text-white text-[9px] font-mono font-bold px-1.5 py-0.5 rounded">
+                                  WILDLIFE
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="p-2 text-[10px] font-mono text-muted-foreground truncate">
+                            {img.fileName}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

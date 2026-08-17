@@ -30,54 +30,36 @@ const seedInitialData = async () => {
       console.log(`[BaghNetra-Seed] Seeded ${stations.length} Pench camera stations.`);
     }
 
-    // 2. Seed Resident Tigers if empty
-    const tigerCount = await Tiger.countDocuments();
-    if (tigerCount === 0) {
-      console.log('[BaghNetra-Seed] Seeding Pench resident tiger catalog...');
-      const tigers = [
-        {
-          tigerId: 'BT001',
-          name: 'Collarwali / Baghin (PTR-T-15)',
-          sex: 'FEMALE',
-          estimatedAge: 6.5,
-          status: 'RESIDENT',
-          healthNotes: 'Legendary matriarch of Pench. Consistent core territory usage.'
-        },
-        {
-          tigerId: 'BT002',
-          name: 'Langdi / T-20',
-          sex: 'FEMALE',
-          estimatedAge: 5.0,
-          status: 'RESIDENT',
-          healthNotes: 'Dominant core female with distinctive right flank stripes.'
-        },
-        {
-          tigerId: 'BT003',
-          name: 'Raiyyakassa Male (PTR-T-30)',
-          sex: 'MALE',
-          estimatedAge: 7.0,
-          status: 'RESIDENT',
-          healthNotes: 'Large territorial prime breeding male covering northern core.'
-        },
-        {
-          tigerId: 'BT004',
-          name: 'Charger / T-40',
-          sex: 'MALE',
-          estimatedAge: 4.5,
-          status: 'RESIDENT',
-          healthNotes: 'Southern sector male active near Jamtara buffer boundary.'
-        },
-        {
-          tigerId: 'BT005',
-          name: 'Bikram / T-50',
-          sex: 'MALE',
-          estimatedAge: 3.5,
-          status: 'DISPERSING',
-          healthNotes: 'Young dispersing sub-adult male monitored along Rukhad buffer ridge.'
+    // 2. Seed Tigers directly from dataset if available
+    const datasetTigersPath = path.join(__dirname, 'utils/dataset_tigers.json');
+    if (fs.existsSync(datasetTigersPath)) {
+      try {
+        const datasetTigers = JSON.parse(fs.readFileSync(datasetTigersPath, 'utf8'));
+        const currentCount = await Tiger.countDocuments();
+        if (currentCount < datasetTigers.length) {
+          await Tiger.deleteMany({});
+          await Tiger.insertMany(datasetTigers);
+          console.log(`[BaghNetra-Seed] Seeded ${datasetTigers.length} real wild tigers directly from dataset.`);
         }
-      ];
-      await Tiger.insertMany(tigers);
-      console.log(`[BaghNetra-Seed] Seeded ${tigers.length} Pench resident tigers.`);
+      } catch (err) {
+        console.warn(`[BaghNetra-Seed] Error loading dataset tigers: ${err.message}`);
+      }
+    } else {
+      const tigerCount = await Tiger.countDocuments();
+      if (tigerCount === 0) {
+        console.log('[BaghNetra-Seed] Seeding default tiger catalog...');
+        const tigers = [
+          {
+            tigerId: 'TIGER_001',
+            name: 'Wild Tiger #001',
+            sex: 'FEMALE',
+            estimatedAge: 6.5,
+            status: 'RESIDENT',
+            healthNotes: 'Wild individual with distinct flank stripe pattern.'
+          }
+        ];
+        await Tiger.insertMany(tigers);
+      }
     }
 
     // 3. Seed Grounded Historical Movement Telemetry if empty

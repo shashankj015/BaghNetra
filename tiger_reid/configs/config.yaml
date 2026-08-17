@@ -1,0 +1,51 @@
+# BaghNetra Tiger Re-ID Configuration
+
+system:
+  seed: 42
+  num_workers: 2
+  device: "auto" # "auto" -> mps if available, else cuda if available, else cpu
+
+data:
+  raw_dir: "/Users/pagarearyanmanohar/code/hackathon/manthan/BaghNetra_mern/re id"
+  train_images_dir: "/Users/pagarearyanmanohar/code/hackathon/manthan/BaghNetra_mern/re id/train"
+  test_images_dir: "/Users/pagarearyanmanohar/code/hackathon/manthan/BaghNetra_mern/re id/test"
+  train_anno_csv: "/Users/pagarearyanmanohar/code/hackathon/manthan/BaghNetra_mern/re id/atrw_anno_reid_train/reid_list_train.csv"
+  train_keypoints_json: "/Users/pagarearyanmanohar/code/hackathon/manthan/BaghNetra_mern/re id/atrw_anno_reid_train/reid_keypoints_train.json"
+  splits_dir: "data/splits"
+  image_size: [224, 224] # [height, width]
+  use_keypoint_crop: false # Dataset images are already pre-cropped flank regions
+
+model:
+  backbone: "resnet50"
+  pretrained: true
+  embedding_dim: 512
+  dropout_rate: 0.1
+  normalize_embeddings: true
+
+loss:
+  margin: 0.3
+  triplet_weight: 1.0
+  classification_weight: 1.0
+  label_smoothing: 0.1
+
+sampler:
+  p_identities: 8 # Number of unique identities per batch
+  k_instances: 4   # Number of images per identity
+  # Batch size = P * K = 32
+
+training:
+  epochs: 35
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  lr_scheduler: "cosine" # "cosine" or "step"
+  min_lr: 0.000001
+  warmup_epochs: 3
+  early_stopping_patience: 10
+  checkpoint_dir: "checkpoints"
+  experiments_dir: "experiments"
+  save_frequency: 5
+
+evaluation:
+  batch_size: 32
+  match_threshold: 0.70 # Initial cosine similarity threshold (calibrated during validation)
+  top_k: [1, 5, 10]

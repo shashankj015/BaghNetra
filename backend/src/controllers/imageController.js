@@ -187,3 +187,34 @@ exports.getDashboardAnalytics = async (req, res) => {
   }
 };
 
+exports.serveImageFile = async (req, res) => {
+  try {
+    const image = await Image.findById(req.params.id);
+    if (!image) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+
+    const candidatePaths = [
+      image.filePath,
+      image.originalPath,
+      image.quarantinePath,
+      path.resolve(image.filePath),
+      path.resolve(__dirname, '../../../', image.filePath),
+      path.resolve(__dirname, '../../', image.filePath),
+      path.resolve(process.cwd(), image.filePath),
+      path.resolve(process.cwd(), '..', image.filePath)
+    ].filter(Boolean);
+
+    for (const p of candidatePaths) {
+      if (fs.existsSync(p)) {
+        return res.sendFile(path.resolve(p));
+      }
+    }
+
+    res.status(404).json({ error: 'Image binary file missing on disk' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+

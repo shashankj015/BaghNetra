@@ -26,11 +26,18 @@ const TigerSchema = new mongoose.Schema({
     enum: ['RESIDENT', 'DISPERSING', 'TRANSIENT', 'ABSENT', 'DECEASED'],
     default: 'RESIDENT'
   },
+  representativeImage: {
+    type: String,
+    default: ''
+  },
   referenceImages: [{
     type: String
   }],
   flankCropImages: [{
     type: String
+  }],
+  embedding: [{
+    type: Number
   }],
   embeddings: [{
     type: Number
