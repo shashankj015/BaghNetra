@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { useTheme } from '../context/ThemeContext';
 
 // Custom Marker Icons for Camera Zones
 const createMarkerIcon = (color, symbol) => {
@@ -55,6 +56,12 @@ export default function LeafletTigerMap({
   selectedTigerId = null,
   className = ''
 }) {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const tileUrl = isLight
+    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
   return (
     <div className={`relative w-full h-full overflow-hidden ${className}`} style={{ height }}>
       <MapContainer
@@ -65,10 +72,11 @@ export default function LeafletTigerMap({
       >
         <ChangeView center={center} zoom={zoom} />
         
-        {/* Light Positron CartoDB Basemap */}
+        {/* Dynamic CartoDB Basemap according to current theme */}
         <TileLayer
+          key={theme}
           attribution='&copy; <a href="https://carto.com/">CARTO</a> | Pench Tiger Reserve'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          url={tileUrl}
         />
 
         {/* Render Tiger Home Range Polygons */}
