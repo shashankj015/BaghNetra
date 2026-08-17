@@ -9,6 +9,7 @@ const User = require('./models/User');
 
 const MovementRecord = require('./models/MovementRecord');
 const occupancyService = require('./services/occupancyService');
+const alertService = require('./services/alertService');
 
 const PORT = process.env.PORT || 5000;
 
@@ -106,6 +107,10 @@ const seedInitialData = async () => {
       await occupancyService.regenerateTigerOccupancy(t.tigerId);
     }
     console.log('[BaghNetra-Seed] Regenerated dynamic telemetry-derived occupancy for all catalogue tigers.');
+
+    // 5. Evaluate and seed dynamic wildlife intelligence alerts
+    await alertService.evaluateAllAlerts();
+    console.log('[BaghNetra-Seed] Synchronized and evaluated all dynamic alerts (Village proximity, Overlap, Prolonged absence).');
 
     // 3. Seed Default Admin User if empty
     const userCount = await User.countDocuments();

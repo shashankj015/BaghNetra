@@ -15,11 +15,6 @@ export default function MainLayout() {
         {/* Top Navbar */}
         <Navbar />
 
-        {/* Ethical AI Banner */}
-        <div className="bg-accent/10 text-accent text-[10px] font-bold text-center py-1 tracking-widest uppercase border-b border-accent/20 shadow-inner">
-          DEMO DATA — NOT REAL PENCH TIGER RESERVE DATA • AUTOMATED FIELD CAMERA TRAP INTELLIGENCE SYSTEM
-        </div>
-
         {/* Page Content Viewport */}
         <main className="flex-1 p-6 overflow-y-auto custom-scrollbar relative z-10">
           <div className="max-w-7xl mx-auto">

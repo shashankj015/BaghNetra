@@ -193,6 +193,14 @@ class MovementAnalysisService {
     // 5. Prolonged Absence Check for All Catalog Tigers
     await this.checkProlongedAbsences(generatedAlerts);
 
+    // 6. Synchronize all global dynamic alerts
+    try {
+      const alertService = require('./alertService');
+      await alertService.evaluateAllAlerts();
+    } catch (e) {
+      console.warn('[MovementAnalysis] Global alert sync notice:', e.message);
+    }
+
     console.log(`[MovementAnalysis] Completed run analysis. Generated ${generatedAlerts.length} deviation alerts.`);
     return generatedAlerts;
   }

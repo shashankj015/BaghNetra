@@ -66,15 +66,15 @@ class OccupancyService {
           { stationId: 'PTR-C-03', latitude: 21.7180, longitude: 79.2550, daysAgo: 2 }
         ]
       },
-      // 🏔️ TIGER_4: Isolated in Far North-East Rukhad Buffer (Zero overlap)
+      // 🏔️ TIGER_4: Isolated in Far North-East Rukhad Buffer (Telemetry silence > 45 days for alert demonstration)
       'TIGER_4': {
         sex: 'MALE',
         status: 'RESIDENT',
         trail: [
-          { stationId: 'PTR-B-01', latitude: 21.7850, longitude: 79.4120, daysAgo: 20 },
-          { stationId: 'PTR-B-01', latitude: 21.8050, longitude: 79.4350, daysAgo: 15 },
-          { stationId: 'PTR-B-01', latitude: 21.7750, longitude: 79.4400, daysAgo: 8 },
-          { stationId: 'PTR-B-01', latitude: 21.7950, longitude: 79.3950, daysAgo: 3 }
+          { stationId: 'PTR-B-01', latitude: 21.7850, longitude: 79.4120, daysAgo: 72 },
+          { stationId: 'PTR-B-01', latitude: 21.8050, longitude: 79.4350, daysAgo: 65 },
+          { stationId: 'PTR-B-01', latitude: 21.7750, longitude: 79.4400, daysAgo: 58 },
+          { stationId: 'PTR-B-01', latitude: 21.7950, longitude: 79.3950, daysAgo: 52 }
         ]
       },
       // 🌊 TIGER_5: Isolated in Southern Turia & Khawasa River Valley (Zero overlap)

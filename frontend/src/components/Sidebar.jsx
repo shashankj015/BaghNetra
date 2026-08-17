@@ -12,7 +12,6 @@ import {
   Cpu,
   Settings,
   ShieldCheck,
-  Activity,
   BarChart3,
   HardDrive
 } from 'lucide-react';
@@ -23,7 +22,6 @@ const navItems = [
   { path: '/ingest', label: 'AI Ingest & Re-ID', icon: UploadCloud },
   { path: '/cameras', label: 'Camera Traps', icon: Camera },
   { path: '/tigers', label: 'Tigers', icon: Sparkles },
-  { path: '/movement', label: 'Movement Intelligence', icon: Activity },
   { path: '/map', label: 'Occupancy Map', icon: MapPin },
   { path: '/alerts', label: 'Alerts', icon: AlertTriangle, badgeKey: 'activeAlerts' },
   { path: '/review', label: 'Review Queue', icon: CheckSquare, badgeKey: 'pendingReviews' },

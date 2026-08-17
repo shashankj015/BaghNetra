@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const Review = require('../models/Review');
 const Image = require('../models/Image');
+const Alert = require('../models/Alert');
 const Tiger = require('../models/Tiger');
 const MovementRecord = require('../models/MovementRecord');
 const AuditLog = require('../models/AuditLog');
@@ -12,17 +13,23 @@ exports.getPendingReviews = async (req, res) => {
     const { limit = 50, page = 1 } = req.query;
     const filter = { reviewStatus: 'PENDING', isDeleted: false };
     
-    const total = await Image.countDocuments(filter);
-    const pendingImages = await Image.find(filter)
-      .sort({ timestamp: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    const [imageTotal, pendingImages, reviewedAlerts] = await Promise.all([
+      Image.countDocuments(filter),
+      Image.find(filter)
+        .sort({ timestamp: -1 })
+        .skip((page - 1) * limit)
+        .limit(Number(limit)),
+      Alert.find({ status: 'REVIEWED' }).sort({ reviewedAt: -1, updatedAt: -1 })
+    ]);
 
     res.json({
-      total,
+      total: imageTotal + reviewedAlerts.length,
+      imageCount: imageTotal,
+      alertCount: reviewedAlerts.length,
       page: Number(page),
       limit: Number(limit),
-      pendingImages
+      pendingImages,
+      reviewedAlerts
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

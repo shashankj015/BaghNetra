@@ -27,8 +27,15 @@ TIGER_CONFIDENCE_THRESHOLD = float(os.getenv("AI_TIGER_THRESHOLD", "0.25"))
 HIGH_IDENTIFICATION_THRESHOLD = float(os.getenv("AI_HIGH_THRESHOLD", "0.525")) # Calibrated for FAR <= 1%
 LOW_IDENTIFICATION_THRESHOLD = float(os.getenv("AI_LOW_THRESHOLD", "0.350"))  # Review / Ambiguous band
 
-# Device configuration (Auto-detect MPS / CUDA / CPU)
-DEVICE = "mps" if os.getenv("USE_MPS", "true").lower() == "true" else ("cuda" if os.getenv("USE_CUDA", "false").lower() == "true" else "cpu")
+import torch
+
+# Device configuration (Auto-detect CUDA / MPS / CPU)
+if torch.cuda.is_available() and os.getenv("USE_CUDA", "true").lower() == "true":
+    DEVICE = "cuda"
+elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available() and os.getenv("USE_MPS", "true").lower() == "true":
+    DEVICE = "mps"
+else:
+    DEVICE = "cpu"
 
 # Image preprocessing
 IMG_SIZE_BLANK = (224, 224)
