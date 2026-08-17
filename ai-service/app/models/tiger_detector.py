@@ -39,7 +39,13 @@ class TigerDetector:
                     self.model = YOLO(str(model_path))
                     logger.info(f"Loaded custom YOLO Tiger Detector from {model_path}")
                 else:
+<<<<<<< HEAD
                     raise FileNotFoundError(f"Custom tiger detector weights not found: {model_path}")
+=======
+                    # Initialize default YOLOv8 nano for real inference
+                    self.model = YOLO("yolov8n.pt")
+                    logger.info("Loaded base YOLOv8n detector model for wildlife triage")
+>>>>>>> origin/Trivedi-branch
                 self.is_loaded = True
             except Exception as e:
                 logger.warning(f"YOLO initialization notice: {e}")
@@ -59,7 +65,11 @@ class TigerDetector:
         w, h = image.size
         
         if not self.is_loaded or not HAS_YOLO:
+<<<<<<< HEAD
             return self._unavailable_result(image, "YOLO model is unavailable")
+=======
+            return self._heuristic_detect(image, confidence_threshold)
+>>>>>>> origin/Trivedi-branch
             
         try:
             results = self.model.predict(
@@ -101,8 +111,20 @@ class TigerDetector:
                         else:
                             class_name = "other_animal"
                     else:
+<<<<<<< HEAD
                         # Do not reinterpret a generic COCO model as a tiger model.
                         return self._unavailable_result(image, "Loaded weights are not the required 3-class tiger detector")
+=======
+                        # Fallback standard COCO 80-class model
+                        # COCO: 0=person, 15=cat, 16=dog, 17=horse, 18=sheep, 19=cow, 20=elephant, 21=bear, 22=zebra, 23=giraffe
+                        if cls_id == 0:
+                            class_name = "human"
+                            has_human = True
+                        elif cls_id in [15, 16, 21]: # Feline / large carnivore proxy
+                            class_name = "tiger"
+                        else:
+                            class_name = "other_animal"
+>>>>>>> origin/Trivedi-branch
                         
                     det = {
                         "class": class_name,
@@ -152,6 +174,7 @@ class TigerDetector:
                 }
         except Exception as e:
             logger.error(f"YOLO detection exception: {e}")
+<<<<<<< HEAD
             return self._unavailable_result(image, f"YOLO inference failed: {e}")
 
     def _unavailable_result(self, image: Image.Image, reason: str) -> Dict[str, Any]:
@@ -168,6 +191,24 @@ class TigerDetector:
             "version": "2.0.0",
             "error": reason,
             "needs_review": True
+=======
+            return self._heuristic_detect(image, confidence_threshold)
+
+    def _heuristic_detect(self, image: Image.Image, confidence_threshold: float) -> Dict[str, Any]:
+        """Fallback detector when YOLO model is initializing."""
+        w, h = image.size
+        # Center bounding box
+        bbox = [int(w * 0.15), int(h * 0.15), int(w * 0.85), int(h * 0.85)]
+        return {
+            "detected": True,
+            "class": "tiger",
+            "confidence": 0.88,
+            "bbox": bbox,
+            "all_detections": [{"class": "tiger", "confidence": 0.88, "bbox": bbox}],
+            "has_human": False,
+            "model": "TigerDetector-Heuristic",
+            "version": "1.0.0"
+>>>>>>> origin/Trivedi-branch
         }
 
     def apply_human_privacy_mask(self, image: Image.Image, bbox: List[float]) -> Image.Image:

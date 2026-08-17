@@ -121,6 +121,7 @@ def preprocess_for_embedding(image: Image.Image, target_size: Tuple[int, int] = 
 def preprocess_for_classification(image: Image.Image, target_size: Tuple[int, int] = (224, 224)) -> np.ndarray:
     """Preprocess image for Blank / Non-Blank classifier."""
     return preprocess_for_embedding(image, target_size)
+<<<<<<< HEAD
 
 
 def extract_flank_views(tiger_crop: Image.Image):
@@ -138,3 +139,5 @@ def extract_flank_views(tiger_crop: Image.Image):
             img.crop((int(0.35*w), int(0.10*h), w, int(0.90*h))),
         ])
     return views
+=======
+>>>>>>> origin/Trivedi-branch

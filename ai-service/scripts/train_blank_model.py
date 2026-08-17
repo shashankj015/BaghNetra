@@ -11,7 +11,11 @@ import argparse
 import time
 from pathlib import Path
 from typing import Dict, Any, Tuple
+<<<<<<< HEAD
 from PIL import Image, ImageEnhance
+=======
+from PIL import Image
+>>>>>>> origin/Trivedi-branch
 import numpy as np
 
 # Add parent directory to path
@@ -60,6 +64,7 @@ if HAS_TORCH:
             
             with Image.open(img_path) as img:
                 img = img.convert("RGB")
+<<<<<<< HEAD
                 if self.is_train:
                     if np.random.rand() > 0.5:
                         img = img.transpose(Image.FLIP_LEFT_RIGHT)
@@ -67,6 +72,10 @@ if HAS_TORCH:
                         img = ImageEnhance.Brightness(img).enhance(float(np.random.uniform(0.75, 1.25)))
                     if np.random.rand() > 0.5:
                         img = ImageEnhance.Contrast(img).enhance(float(np.random.uniform(0.75, 1.25)))
+=======
+                if self.is_train and np.random.rand() > 0.5:
+                    img = img.transpose(Image.FLIP_LEFT_RIGHT)
+>>>>>>> origin/Trivedi-branch
                 arr = preprocess_for_classification(img)
                 
             return torch.from_numpy(arr), torch.tensor(label, dtype=torch.long)
@@ -106,16 +115,24 @@ def train_blank_model(
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     
+<<<<<<< HEAD
     model = BlankClassifierNN(num_classes=2, pretrained=False)
     existing = output_dir / "best_model.pt"
     if existing.exists():
         model.load_state_dict(torch.load(existing, map_location=device, weights_only=True))
         logger.info("Fine-tuning existing blank detector weights")
+=======
+    model = BlankClassifierNN(num_classes=2, pretrained=True)
+>>>>>>> origin/Trivedi-branch
     model.to(device)
     
     # Class weights to penalize false negatives (class 1 is NON_BLANK, we NEVER want to misclassify wildlife as blank)
     # Weight of Non-Blank is 1.5x to bias against dropping wildlife frames
+<<<<<<< HEAD
     class_weights = torch.tensor([1.0, 2.5], dtype=torch.float32).to(device)
+=======
+    class_weights = torch.tensor([1.0, 1.5], dtype=torch.float32).to(device)
+>>>>>>> origin/Trivedi-branch
     criterion = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)

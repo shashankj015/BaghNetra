@@ -81,6 +81,7 @@ class BlankDetector:
             raw_scores (dict)
         """
         if not self.is_loaded or not HAS_TORCH:
+<<<<<<< HEAD
             return {
                 "blank": False,
                 "blank_confidence": 0.0,
@@ -91,6 +92,10 @@ class BlankDetector:
                 "quarantine_recommended": False,
                 "needs_review": True
             }
+=======
+            # Fallback visual variance & edge density heuristic if weights not yet loaded
+            return self._heuristic_predict(image, blank_threshold)
+>>>>>>> origin/Trivedi-branch
             
         try:
             tensor_data = preprocess_for_classification(image)
@@ -117,6 +122,7 @@ class BlankDetector:
             }
         except Exception as e:
             logger.error(f"Blank classification error: {e}")
+<<<<<<< HEAD
             return {
                 "blank": False,
                 "blank_confidence": 0.0,
@@ -128,6 +134,9 @@ class BlankDetector:
                 "needs_review": True,
                 "error": str(e)
             }
+=======
+            return self._heuristic_predict(image, blank_threshold)
+>>>>>>> origin/Trivedi-branch
 
     def _heuristic_predict(self, image: Image.Image, blank_threshold: float) -> Dict[str, Any]:
         """Field-safe heuristic analysis based on pixel gradient energy & contrast distribution."""

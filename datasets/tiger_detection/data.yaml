@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 path: C:/VS Code/hackathon/baghnetra-main/datasets/tiger_detection
 
+=======
+path: C:/Users/Hp/OneDrive/Desktop/baghnetra/datasets/tiger_detection
+>>>>>>> origin/Trivedi-branch
 train: images/train
 val: images/val
 test: images/test
@@ -7,4 +11,8 @@ test: images/test
 names:
   0: tiger
   1: other_animal
+<<<<<<< HEAD
   2: human
+=======
+  2: human
+>>>>>>> origin/Trivedi-branch

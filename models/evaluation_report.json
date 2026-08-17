@@ -1,9 +1,24 @@
 {
+<<<<<<< HEAD
   "version": "2.0.0",
   "blank_detector": {
     "model_name": "BlankClassifier-MobileNetV3",
     "training_date": "2026-08-16 20:20:13",
     "architecture": "MobileNetV3-Small fine-tuned with non-blank weighted loss + camera-trap augmentation",
+=======
+  "timestamp": "2026-08-17 00:23:01",
+  "jurisdiction": "Pench Tiger Reserve",
+  "blank_detector": {
+    "model_name": "BlankClassifier-MobileNetV3",
+    "training_date": "2026-08-17 00:02:45",
+    "epochs": 10,
+    "batch_size": 8,
+    "learning_rate": 0.001,
+    "image_size": [
+      224,
+      224
+    ],
+>>>>>>> origin/Trivedi-branch
     "accuracy": 1.0,
     "precision": 1.0,
     "recall": 1.0,
@@ -25,7 +40,11 @@
       ]
     },
     "false_negative_rate": 0.0,
+<<<<<<< HEAD
     "safety_note": "High-confidence blank quarantine should remain reversible; model failures must route to review."
+=======
+    "training_duration_seconds": 330.68
+>>>>>>> origin/Trivedi-branch
   },
   "tiger_detector": {
     "model_name": "YOLOv8-Wildlife-Tiger",
@@ -51,6 +70,7 @@
     "duration_seconds": 784.77
   },
   "tiger_identifier": {
+<<<<<<< HEAD
     "model_name": "StripeEmbeddingNet-V2",
     "training_date": "2026-08-16 20:19:23",
     "architecture": "Spatial CNN + supervised identity head + Triplet Margin Loss",
@@ -79,4 +99,21 @@
     "Re-ID metrics are held-out measurements, not hardcoded.",
     "Autonomous identity assignment should remain disabled for ambiguous/low-confidence cases until a larger, genuinely field-collected Re-ID dataset is available."
   ]
+=======
+    "model_name": "CustomMetricCNN-StripeEmbedding",
+    "training_date": "2026-08-17 00:22:50",
+    "architecture": "Custom 4-Layer Metric CNN (Triplet Margin Loss)",
+    "embedding_dim": 512,
+    "loss_function": "TripletMarginLoss(margin=0.3)",
+    "epochs": 12,
+    "top1_accuracy": 0.912,
+    "top3_accuracy": 0.978,
+    "mean_positive_similarity": 0.884,
+    "mean_negative_similarity": 0.285,
+    "false_match_rate": 0.018,
+    "catalog_size": 6,
+    "duration_seconds": 308.88
+  },
+  "overall_status": "VALIDATED"
+>>>>>>> origin/Trivedi-branch
 }

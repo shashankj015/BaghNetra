@@ -20,6 +20,7 @@ TIGER_EMBEDDINGS_PATH = MODELS_DIR / "tiger_identifier" / "embeddings.json"
 TIGER_IDENTIFIER_METRICS_PATH = MODELS_DIR / "tiger_identifier" / "metrics.json"
 
 # AI Pipeline Thresholds
+<<<<<<< HEAD
 BLANK_CONFIDENCE_THRESHOLD = float(os.getenv("AI_BLANK_THRESHOLD", "0.98"))
 BLANK_REVIEW_THRESHOLD = float(os.getenv("AI_BLANK_REVIEW_THRESHOLD", "0.50"))
 TIGER_CONFIDENCE_THRESHOLD = float(os.getenv("AI_TIGER_THRESHOLD", "0.35"))
@@ -35,6 +36,13 @@ except Exception:
     _calibrated_high = None
 HIGH_IDENTIFICATION_THRESHOLD = float(os.getenv("AI_HIGH_THRESHOLD", str(_calibrated_high if _calibrated_high is not None else 0.82)))
 LOW_IDENTIFICATION_THRESHOLD = float(os.getenv("AI_LOW_THRESHOLD", str(max(0.55, HIGH_IDENTIFICATION_THRESHOLD - 0.12))))
+=======
+BLANK_CONFIDENCE_THRESHOLD = float(os.getenv("AI_BLANK_THRESHOLD", "0.95"))
+BLANK_REVIEW_THRESHOLD = float(os.getenv("AI_BLANK_REVIEW_THRESHOLD", "0.50"))
+TIGER_CONFIDENCE_THRESHOLD = float(os.getenv("AI_TIGER_THRESHOLD", "0.35"))
+HIGH_IDENTIFICATION_THRESHOLD = float(os.getenv("AI_HIGH_THRESHOLD", "0.82"))
+LOW_IDENTIFICATION_THRESHOLD = float(os.getenv("AI_LOW_THRESHOLD", "0.65"))
+>>>>>>> origin/Trivedi-branch
 
 # Device configuration (CPU first for field laptops, GPU if available)
 DEVICE = "cuda" if os.getenv("USE_CUDA", "false").lower() == "true" else "cpu"

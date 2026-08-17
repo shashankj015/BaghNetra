@@ -11,11 +11,19 @@ import {
   AlertTriangle,
   Cpu,
   Settings,
+<<<<<<< HEAD
   ShieldCheck
+=======
+  ShieldCheck,
+  Activity,
+  BarChart3,
+  HardDrive
+>>>>>>> origin/Trivedi-branch
 } from 'lucide-react';
 import api from '../services/api';
 
 const navItems = [
+<<<<<<< HEAD
   { path: '/dashboard', label: 'Telemetry Overview', icon: LayoutDashboard },
   { path: '/ingest', label: 'SD Ingest & Triage', icon: UploadCloud },
   { path: '/runs', label: 'Processing Runs', icon: Layers },
@@ -26,6 +34,18 @@ const navItems = [
   { path: '/alerts', label: 'Deviation Alerts', icon: AlertTriangle, badgeKey: 'activeAlerts' },
   { path: '/models', label: 'AI Models & Metrics', icon: Cpu },
   { path: '/settings', label: 'Thresholds & Settings', icon: Settings },
+=======
+  { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { path: '/cameras', label: 'Camera Traps', icon: Camera },
+  { path: '/tigers', label: 'Tigers', icon: Sparkles },
+  { path: '/movement', label: 'Movement Intelligence', icon: Activity },
+  { path: '/map', label: 'Occupancy Map', icon: MapPin },
+  { path: '/alerts', label: 'Alerts', icon: AlertTriangle, badgeKey: 'activeAlerts' },
+  { path: '/review', label: 'Review Queue', icon: CheckSquare, badgeKey: 'pendingReviews' },
+  { path: '/runs', label: 'Processing Runs', icon: Layers },
+  { path: '/reports', label: 'Reports', icon: BarChart3 },
+  { path: '/settings', label: 'Settings', icon: Settings },
+>>>>>>> origin/Trivedi-branch
 ];
 
 export default function Sidebar() {
@@ -43,16 +63,26 @@ export default function Sidebar() {
           activeAlerts: altRes.data.activeAlerts || 0
         });
       } catch (err) {
+<<<<<<< HEAD
         // silent fallback
+=======
+        // Fallback for offline mode demo
+        setCounts({ pendingReviews: 24, activeAlerts: 3 });
+>>>>>>> origin/Trivedi-branch
       }
     };
 
     fetchCounters();
+<<<<<<< HEAD
     const interval = setInterval(fetchCounters, 8000);
+=======
+    const interval = setInterval(fetchCounters, 15000);
+>>>>>>> origin/Trivedi-branch
     return () => clearInterval(interval);
   }, []);
 
   return (
+<<<<<<< HEAD
     <aside style={{
       width: '260px',
       minWidth: '260px',
@@ -87,13 +117,33 @@ export default function Sidebar() {
             </h2>
             <p style={{ fontSize: '0.7rem', color: '#9ca3af', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Pench Tiger Reserve
+=======
+    <aside className="w-64 min-w-[16rem] h-screen sticky top-0 bg-card/70 border-r border-border flex flex-col p-5 z-40 backdrop-blur-xl transition-colors">
+      
+      {/* Brand Header */}
+      <div className="pb-6 border-b border-border mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-emerald-800 flex items-center justify-center cinematic-glow shadow-md">
+            <ShieldCheck className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-heading font-extrabold text-foreground tracking-tight flex items-center">
+              Bagh<span className="text-primary ml-1 font-black">Netra</span>
+            </h2>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider font-mono mt-0.5">
+              Forest Intelligence
+>>>>>>> origin/Trivedi-branch
             </p>
           </div>
         </div>
       </div>
 
       {/* Navigation List */}
+<<<<<<< HEAD
       <nav style={{ marginTop: '1rem', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+=======
+      <nav className="flex-1 overflow-y-auto flex flex-col gap-1 pr-1 custom-scrollbar">
+>>>>>>> origin/Trivedi-branch
         {navItems.map((item) => {
           const Icon = item.icon;
           const badgeValue = item.badgeKey ? counts[item.badgeKey] : 0;
@@ -102,6 +152,7 @@ export default function Sidebar() {
             <NavLink
               key={item.path}
               to={item.path}
+<<<<<<< HEAD
               style={({ isActive }) => ({
                 display: 'flex',
                 alignItems: 'center',
@@ -132,6 +183,32 @@ export default function Sidebar() {
                 }}>
                   {badgeValue}
                 </span>
+=======
+              className={({ isActive }) => `
+                flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group no-underline
+                ${isActive 
+                  ? 'bg-primary/15 text-primary font-bold border border-primary/25 shadow-sm' 
+                  : 'text-muted-foreground font-medium hover:bg-muted/60 hover:text-foreground hover:translate-x-0.5'}
+              `}
+            >
+              {({ isActive }) => (
+                <>
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                    <span className="text-sm tracking-tight">{item.label}</span>
+                  </div>
+                  {badgeValue > 0 && (
+                    <span className={`
+                      text-[10px] font-bold font-mono px-2 py-0.5 rounded-full
+                      ${item.badgeKey === 'activeAlerts' 
+                        ? 'bg-destructive/15 text-destructive border border-destructive/30' 
+                        : 'bg-accent/15 text-accent border border-accent/30'}
+                    `}>
+                      {badgeValue}
+                    </span>
+                  )}
+                </>
+>>>>>>> origin/Trivedi-branch
               )}
             </NavLink>
           );
@@ -139,6 +216,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Offline Status Badge */}
+<<<<<<< HEAD
       <div style={{
         marginTop: 'auto',
         padding: '0.75rem',
@@ -156,7 +234,50 @@ export default function Sidebar() {
         <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: '700', background: 'rgba(16, 185, 129, 0.1)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
           OFFLINE
         </span>
+=======
+      <div className="mt-auto pt-4 border-t border-border">
+        <div className="bg-muted/40 border border-border rounded-xl p-3.5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </div>
+              <span className="text-xs text-foreground font-bold tracking-tight font-mono">● OFFLINE KERNEL</span>
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground mb-3 leading-tight font-mono">
+            Local Edge Engine — No cloud required.
+          </p>
+          
+          {/* Mini System Resources */}
+          <div className="space-y-2">
+            <div>
+              <div className="flex justify-between text-[9px] text-muted-foreground mb-1 font-mono uppercase tracking-wider font-semibold">
+                <span>Core CPU</span>
+                <span className="text-foreground">64%</span>
+              </div>
+              <div className="h-1.5 w-full bg-background rounded-full overflow-hidden border border-border/50">
+                <div className="h-full bg-primary w-[64%] rounded-full"></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-[9px] text-muted-foreground mb-1 font-mono uppercase tracking-wider font-semibold">
+                <span>NVMe Storage</span>
+                <span className="text-foreground">78 GB free</span>
+              </div>
+              <div className="h-1.5 w-full bg-background rounded-full overflow-hidden border border-border/50">
+                <div className="h-full bg-accent w-[82%] rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+>>>>>>> origin/Trivedi-branch
       </div>
     </aside>
   );
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/Trivedi-branch
