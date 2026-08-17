@@ -1,0 +1,11 @@
+.leaflet-map-wrapper {
+  width: 100%;
+  height: 400px; /* Adjust as needed */
+  border-radius: 0.75rem; /* match UI rounding */
+  overflow: hidden;
+}
+
+.leaflet-map {
+  width: 100%;
+  height: 100%;
+}
