@@ -38,10 +38,10 @@ const seedInitialData = async () => {
       try {
         const datasetTigers = JSON.parse(fs.readFileSync(datasetTigersPath, 'utf8'));
         const currentCount = await Tiger.countDocuments();
-        if (currentCount < datasetTigers.length) {
+        if (currentCount !== datasetTigers.length) {
           await Tiger.deleteMany({});
           await Tiger.insertMany(datasetTigers);
-          console.log(`[BaghNetra-Seed] Seeded ${datasetTigers.length} real wild tigers directly from dataset.`);
+          console.log(`[BaghNetra-Seed] Seeded exactly ${datasetTigers.length} tigers into database.`);
         }
       } catch (err) {
         console.warn(`[BaghNetra-Seed] Error loading dataset tigers: ${err.message}`);

@@ -8,8 +8,11 @@ const aiClient = require('../services/aiServiceClient');
 
 // Auto-seed helper
 async function ensureDatasetTigers() {
+  const jsonPath = path.join(__dirname, '../utils/dataset_tigers.json');
+  if (!fs.existsSync(jsonPath)) return;
+  const raw = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
   const count = await Tiger.countDocuments();
-  let needSeed = count === 0;
+  let needSeed = count !== raw.length;
   if (!needSeed) {
     const sample = await Tiger.findOne({});
     if (!sample || !sample.embedding || sample.embedding.length !== 512) {
@@ -17,19 +20,15 @@ async function ensureDatasetTigers() {
     }
   }
   if (needSeed) {
-    const jsonPath = path.join(__dirname, '../utils/dataset_tigers.json');
-    if (fs.existsSync(jsonPath)) {
-      try {
-        const raw = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-        await Tiger.deleteMany({});
-        await Tiger.insertMany(raw);
-        console.log(`[TigerController] Auto-seeded ${raw.length} tigers with 512-D embeddings from dataset_tigers.json`);
-        
-        // Sync with AI service
-        await aiClient.syncReferenceEmbeddings(raw);
-      } catch (err) {
-        console.error('[TigerController] Auto-seed error:', err);
-      }
+    try {
+      await Tiger.deleteMany({});
+      await Tiger.insertMany(raw);
+      console.log(`[TigerController] Auto-seeded ${raw.length} tigers with 512-D embeddings from dataset_tigers.json`);
+      
+      // Sync with AI service
+      await aiClient.syncReferenceEmbeddings(raw);
+    } catch (err) {
+      console.error('[TigerController] Auto-seed error:', err);
     }
   }
 }
