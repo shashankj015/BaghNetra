@@ -70,7 +70,11 @@ const ProcessingRunSchema = new mongoose.Schema({
     fileName: String,
     error: String,
     timestamp: Date
-  }]
+  }],
+  spatialSummary: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('ProcessingRun', ProcessingRunSchema);

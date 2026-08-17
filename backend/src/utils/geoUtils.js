@@ -146,7 +146,7 @@ function computePolygonAreaKm2(coordinates) {
   if (!coordinates || coordinates.length < 3) return 0.0;
   
   // Shoelace formula scaled by equatorial & meridional km/degree at mean latitude
-  const meanLat = coordinates.reduce((sum, pt) => sum + pt[1], 0) / coordinates.length;
+  const meanLat = coordinates.reduce((sum, pt) => sum + (pt[1] || pt.lat || 0), 0) / coordinates.length;
   const kmPerLat = 111.0;
   const kmPerLon = 111.0 * Math.cos(toRadians(meanLat));
   
@@ -154,19 +154,122 @@ function computePolygonAreaKm2(coordinates) {
   for (let i = 0; i < coordinates.length - 1; i++) {
     const p1 = coordinates[i];
     const p2 = coordinates[i + 1];
-    const x1 = p1[0] * kmPerLon;
-    const y1 = p1[1] * kmPerLat;
-    const x2 = p2[0] * kmPerLon;
-    const y2 = p2[1] * kmPerLat;
+    const x1 = (p1[0] !== undefined ? p1[0] : p1.longitude) * kmPerLon;
+    const y1 = (p1[1] !== undefined ? p1[1] : p1.latitude) * kmPerLat;
+    const x2 = (p2[0] !== undefined ? p2[0] : p2.longitude) * kmPerLon;
+    const y2 = (p2[1] !== undefined ? p2[1] : p2.latitude) * kmPerLat;
     area += (x1 * y2 - x2 * y1);
   }
   
   return Math.abs(area / 2.0);
 }
 
+/**
+ * Checks if a point [lon, lat] is inside a polygon [[lon, lat], ...].
+ */
+function isPointInsidePolygon(point, polygon) {
+  const x = point[0] !== undefined ? point[0] : point.longitude;
+  const y = point[1] !== undefined ? point[1] : point.latitude;
+  let inside = false;
+  
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0], yi = polygon[i][1];
+    const xj = polygon[j][0], yj = polygon[j][1];
+    
+    const intersect = ((yi > y) !== (yj > y)) &&
+      (x < (xj - xi) * (y - yi) / (yj - yi + 1e-12) + xi);
+    if (intersect) inside = !inside;
+  }
+  
+  return inside;
+}
+
+/**
+ * Calculates geometric intersection of two convex or simple polygons using Sutherland-Hodgman.
+ * Returns array of [lon, lat] coordinates forming closed intersection polygon, or null if no overlap.
+ */
+function computePolygonIntersection(polyA, polyB) {
+  if (!polyA || polyA.length < 3 || !polyB || polyB.length < 3) return null;
+
+  // Clean closed rings
+  const cleanA = polyA[0][0] === polyA[polyA.length - 1][0] && polyA[0][1] === polyA[polyA.length - 1][1]
+    ? polyA.slice(0, -1) : [...polyA];
+  const cleanB = polyB[0][0] === polyB[polyB.length - 1][0] && polyB[0][1] === polyB[polyB.length - 1][1]
+    ? polyB.slice(0, -1) : [...polyB];
+
+  // Helper: line intersection
+  function lineIntersection(p1, p2, p3, p4) {
+    const d = (p1[0] - p2[0]) * (p3[1] - p4[1]) - (p1[1] - p2[1]) * (p3[0] - p4[0]);
+    if (Math.abs(d) < 1e-9) return null;
+    const xi = ((p3[0] - p4[0]) * (p1[0] * p2[1] - p1[1] * p2[0]) - (p1[0] - p2[0]) * (p3[0] * p4[1] - p3[1] * p4[0])) / d;
+    const yi = ((p3[1] - p4[1]) * (p1[0] * p2[1] - p1[1] * p2[0]) - (p1[1] - p2[1]) * (p3[0] * p4[1] - p3[1] * p4[0])) / d;
+    return [xi, yi];
+  }
+
+  // Ensure clip polygon is oriented counter-clockwise
+  let signedArea = 0;
+  for (let i = 0; i < cleanB.length; i++) {
+    const next = (i + 1) % cleanB.length;
+    signedArea += (cleanB[next][0] - cleanB[i][0]) * (cleanB[next][1] + cleanB[i][1]);
+  }
+  const clipPoly = signedArea > 0 ? cleanB.slice().reverse() : cleanB;
+
+  let outputList = cleanA;
+
+  for (let j = 0; j < clipPoly.length; j++) {
+    const cp1 = clipPoly[j];
+    const cp2 = clipPoly[(j + 1) % clipPoly.length];
+    const inputList = outputList;
+    outputList = [];
+    if (inputList.length === 0) break;
+
+    let s = inputList[inputList.length - 1];
+
+    const isInside = (p) => (cp2[0] - cp1[0]) * (p[1] - cp1[1]) - (cp2[1] - cp1[1]) * (p[0] - cp1[0]) >= -1e-9;
+
+    for (let i = 0; i < inputList.length; i++) {
+      const e = inputList[i];
+      if (isInside(e)) {
+        if (!isInside(s)) {
+          const pt = lineIntersection(s, e, cp1, cp2);
+          if (pt) outputList.push(pt);
+        }
+        outputList.push(e);
+      } else if (isInside(s)) {
+        const pt = lineIntersection(s, e, cp1, cp2);
+        if (pt) outputList.push(pt);
+      }
+      s = e;
+    }
+  }
+
+  if (outputList.length < 3) {
+    // Check if one polygon is completely contained inside the other
+    const aInB = cleanA.every(pt => isPointInsidePolygon(pt, cleanB));
+    if (aInB) {
+      const res = [...cleanA, cleanA[0]];
+      return res;
+    }
+    const bInA = cleanB.every(pt => isPointInsidePolygon(pt, cleanA));
+    if (bInA) {
+      const res = [...cleanB, cleanB[0]];
+      return res;
+    }
+    return null;
+  }
+
+  // Close ring
+  const result = [...outputList, outputList[0]];
+  const area = computePolygonAreaKm2(result);
+  return area > 0.01 ? result : null;
+}
+
 module.exports = {
   haversineDistance,
   computeCentroid,
   computeConvexHull,
-  computePolygonAreaKm2
+  computePolygonAreaKm2,
+  isPointInsidePolygon,
+  computePolygonIntersection
 };
+

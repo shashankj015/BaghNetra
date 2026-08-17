@@ -25,6 +25,21 @@ exports.getRunById = async (req, res) => {
   }
 };
 
+exports.getRunSpatialSummary = async (req, res) => {
+  try {
+    const run = await ProcessingRun.findOne({ runId: req.params.id });
+    if (!run) {
+      return res.status(404).json({ error: 'Processing run not found' });
+    }
+
+    const occupancyService = require('../services/occupancyService');
+    const spatialSummary = run.spatialSummary || await occupancyService.generateRunSpatialDossier(run.runId);
+    res.json({ runId: run.runId, spatialSummary });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.startRun = async (req, res) => {
   try {
     const { folderPath, stationId, options } = req.body;
@@ -38,3 +53,5 @@ exports.startRun = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+

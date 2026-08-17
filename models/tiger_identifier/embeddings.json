@@ -5,7 +5,7 @@
     "sex": "FEMALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/003696.jpg",
-    "totalCaptures": 98,
+    "totalCaptures": 5,
     "embedding": [
       -0.031519,
       -0.06182,
@@ -527,7 +527,7 @@
     "sex": "MALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/002986.jpg",
-    "totalCaptures": 97,
+    "totalCaptures": 5,
     "embedding": [
       0.043853,
       -0.068008,
@@ -1049,7 +1049,7 @@
     "sex": "FEMALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/001069.jpg",
-    "totalCaptures": 49,
+    "totalCaptures": 5,
     "embedding": [
       -0.041378,
       -0.064254,
@@ -1571,7 +1571,7 @@
     "sex": "MALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/001205.jpg",
-    "totalCaptures": 48,
+    "totalCaptures": 5,
     "embedding": [
       -0.062879,
       -0.026835,
@@ -2093,7 +2093,7 @@
     "sex": "FEMALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/001459.jpg",
-    "totalCaptures": 41,
+    "totalCaptures": 5,
     "embedding": [
       0.047133,
       -0.027148,
@@ -2615,7 +2615,7 @@
     "sex": "MALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/004685.jpg",
-    "totalCaptures": 38,
+    "totalCaptures": 5,
     "embedding": [
       -0.024589,
       -0.019709,

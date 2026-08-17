@@ -4,27 +4,36 @@ import {
   UploadCloud, Folder, Play, CheckCircle, AlertCircle, HardDrive, 
   Clock, Activity, Sparkles, ShieldAlert, Eye, Target, MapPin, 
   Tag, RefreshCw, X, ChevronRight, BarChart2, Check, ZoomIn, 
-  PlusCircle, UserPlus, Fingerprint, ExternalLink
+  PlusCircle, UserPlus, Fingerprint, ExternalLink, Users, Layers
 } from 'lucide-react';
 import api from '../services/api';
 
 // Helper to construct image URLs
 const getImageUrl = (img) => {
   if (!img) return '';
-  if (typeof img === 'string') {
-    if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('blob:') || img.startsWith('data:')) {
-      return img;
-    }
-    const clean = img.replace(/^\/+/, '');
-    return `http://localhost:5000/${clean}`;
-  }
-  if (img._id) {
+  let path = typeof img === 'string' ? img : (img.representativeImage || img.filePath || img.previewUrl || '');
+  if (!path && img._id) {
     return `http://localhost:5000/api/images/${img._id}/file`;
   }
-  if (img.filePath) {
-    return `http://localhost:5000/${img.filePath.replace(/^\/+/, '')}`;
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) {
+    return path;
   }
-  return '';
+  let clean = path;
+  if (clean.includes('/uploads/')) {
+    clean = 'uploads/' + clean.split('/uploads/').pop();
+  } else if (clean.includes('\\uploads\\')) {
+    clean = 'uploads/' + clean.split('\\uploads\\').pop();
+  } else if (clean.includes('/sample-data/')) {
+    clean = 'sample-data/' + clean.split('/sample-data/').pop();
+  } else if (clean.includes('/re-id/')) {
+    clean = 're-id/' + clean.split('/re-id/').pop();
+  } else if (clean.includes('/re id/')) {
+    clean = 're-id/' + clean.split('/re id/').pop();
+  } else {
+    clean = clean.replace(/^\/+/, '');
+  }
+  return `http://localhost:5000/${clean}`;
 };
 
 export default function IngestPage() {
@@ -45,6 +54,7 @@ export default function IngestPage() {
   const [singleFile, setSingleFile] = useState(null);
   const [singlePreviewUrl, setSinglePreviewUrl] = useState('');
   const [singleResult, setSingleResult] = useState(null);
+  const [selectedInstanceIndex, setSelectedInstanceIndex] = useState(0);
   const [isUploadingSingle, setIsUploadingSingle] = useState(false);
   
   // Modal / Detail Inspection
@@ -103,6 +113,7 @@ export default function IngestPage() {
     const objectUrl = URL.createObjectURL(file);
     setSinglePreviewUrl(objectUrl);
     setSingleResult(null);
+    setSelectedInstanceIndex(0);
     setEnrollSuccessMessage('');
   };
 
@@ -142,22 +153,25 @@ export default function IngestPage() {
     const interval = setInterval(async () => {
       try {
         const res = await api.get(`/runs/${runId}`);
-        const runData = res.data.run;
-        setProgress(runData);
+        setCurrentRun(res.data);
         
-        await fetchRunImages(runId);
+        // Fetch newly processed images dynamically
+        const imgRes = await api.get(`/images?runId=${runId}`);
+        if (imgRes.data.images) {
+          setBatchImages(imgRes.data.images);
+        }
 
-        if (runData.status === 'COMPLETED' || runData.status === 'FAILED') {
+        if (res.data.status === 'COMPLETED' || res.data.status === 'FAILED') {
           clearInterval(interval);
           setIsProcessing(false);
-          setMessage(`Batch Ingestion Completed: ${runData.processedImages} images processed.`);
-          await fetchRunImages(runId);
+          setMessage(`Run ${runId} finished with status: ${res.data.status}`);
         }
       } catch (err) {
+        console.error('Error polling run:', err);
         clearInterval(interval);
         setIsProcessing(false);
       }
-    }, 1200);
+    }, 2000);
   };
 
   const handleSingleImageUpload = async (e) => {
@@ -166,29 +180,34 @@ export default function IngestPage() {
 
     setIsUploadingSingle(true);
     setSingleResult(null);
+    setSelectedInstanceIndex(0);
     setEnrollSuccessMessage('');
-    try {
-      const formData = new FormData();
-      formData.append('file', singleFile);
-      formData.append('stationId', selectedStation);
 
-      const res = await api.post('/images/upload', formData, {
+    const formData = new FormData();
+    formData.append('image', singleFile);
+    formData.append('stationId', selectedStation);
+
+    try {
+      const res = await api.post('/images/upload-single', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setSingleResult(res.data);
+      setSelectedInstanceIndex(0);
     } catch (err) {
-      alert(`Upload error: ${err.response?.data?.error || err.message}`);
+      console.error('Single upload failed:', err);
     } finally {
       setIsUploadingSingle(false);
     }
   };
 
   // Open the New Tiger Enrollment modal
-  const openEnrollModal = (sourceData, embeddingVector) => {
-    const cands = sourceData?.candidates || singleResult?.image?.candidates || singleResult?.aiAnalysis?.candidates || [];
+  const openEnrollModal = (sourceData, embeddingVector, instance = null) => {
+    const cands = instance?.candidates || sourceData?.candidates || singleResult?.image?.candidates || singleResult?.aiAnalysis?.candidates || [];
+    const emb = embeddingVector || instance?.embedding || sourceData?.embedding || singleResult?.aiAnalysis?.embedding || [];
     setEnrollModalData({
       source: sourceData,
-      embedding: embeddingVector || sourceData?.embedding || singleResult?.aiAnalysis?.embedding || [],
+      instanceId: instance?.instanceId || 1,
+      embedding: emb,
       previewUrl: sourceData?.previewUrl || singlePreviewUrl || getImageUrl(sourceData),
       imagePath: sourceData?.filePath || sourceData?.originalPath || singleResult?.image?.filePath || '',
       imageId: sourceData?._id || singleResult?.image?._id || null,
@@ -203,6 +222,17 @@ export default function IngestPage() {
 
     setIsEnrolling(true);
     try {
+      // Unwrap any React Proxy or nested array structure into a clean 1D array of numbers
+      let cleanEmbedding = [];
+      if (enrollModalData.embedding) {
+        try {
+          const raw = JSON.parse(JSON.stringify(enrollModalData.embedding));
+          cleanEmbedding = Array.isArray(raw) ? raw.flat(Infinity).map(Number).filter(n => !isNaN(n)) : [];
+        } catch (embErr) {
+          cleanEmbedding = [];
+        }
+      }
+
       const payload = {
         tigerId: newTigerForm.tigerId.trim().toUpperCase(),
         name: newTigerForm.name,
@@ -210,7 +240,7 @@ export default function IngestPage() {
         estimatedAge: parseFloat(newTigerForm.estimatedAge) || 3.5,
         status: newTigerForm.status,
         healthNotes: newTigerForm.healthNotes,
-        embedding: enrollModalData.embedding,
+        embedding: cleanEmbedding,
         imagePath: enrollModalData.imagePath,
         imageId: enrollModalData.imageId,
         cameraStation: selectedStation
@@ -218,22 +248,84 @@ export default function IngestPage() {
 
       const res = await api.post('/tigers/enroll-from-image', payload);
       setEnrollSuccessMessage(`Successfully registered ${payload.tigerId} (${payload.name}) into Tiger Database!`);
-      
-      // If we were on single frame, update the displayed result
+
+      const enrolledTiger = res.data.tiger;
+      const finalImgPath = enrolledTiger?.representativeImage || payload.imagePath || singlePreviewUrl;
+
+      // If we were on single frame, update the displayed result with the newly inputted image & identity
       if (singleResult) {
-        setSingleResult(prev => ({
-          ...prev,
-          image: {
-            ...prev.image,
-            tigerId: payload.tigerId,
-            tiger_name: payload.name,
-            identificationConfidence: 1.0,
-            reviewStatus: 'AUTO_CONFIRMED',
-            status: 'CONFIRMED_MATCH',
-            needs_review: false
-          }
-        }));
+        setSingleResult(prev => {
+          const prevInds = prev.image?.detectedIndividuals || prev.aiAnalysis?.detected_individuals || [];
+          const updatedInds = prevInds.map(ind => {
+            if (ind.instanceId === enrollModalData.instanceId || prevInds.length <= 1) {
+              return {
+                ...ind,
+                tigerId: payload.tigerId,
+                individual: payload.tigerId,
+                tigerName: payload.name,
+                identificationConfidence: 1.0,
+                status: 'CONFIRMED_MATCH',
+                reviewStatus: 'AUTO_CONFIRMED',
+                needsReview: false
+              };
+            }
+            return ind;
+          });
+
+          return {
+            ...prev,
+            image: {
+              ...prev.image,
+              tigerId: payload.tigerId,
+              tiger_name: payload.name,
+              name: payload.name,
+              identificationConfidence: 1.0,
+              reviewStatus: 'AUTO_CONFIRMED',
+              status: 'CONFIRMED_MATCH',
+              needs_review: false,
+              detectedIndividuals: updatedInds,
+              filePath: finalImgPath,
+              representativeImage: finalImgPath,
+              previewUrl: singlePreviewUrl || finalImgPath,
+              candidates: [
+                {
+                  tigerId: payload.tigerId,
+                  name: payload.name,
+                  similarity: 1.0,
+                  representativeImage: finalImgPath
+                },
+                ...(prev.image?.candidates || []).filter(c => c.tigerId !== payload.tigerId)
+              ]
+            },
+            aiAnalysis: {
+              ...(prev.aiAnalysis || {}),
+              individual: payload.tigerId,
+              tiger_name: payload.name,
+              identification_confidence: 1.0,
+              status: 'CONFIRMED_MATCH',
+              needs_review: false,
+              detected_individuals: updatedInds
+            }
+          };
+        });
       }
+
+      // Update batch gallery so the new capture appears with its inputted image
+      setBatchImages(prev => {
+        const newImgItem = {
+          ...(singleResult?.image || {}),
+          _id: payload.imageId || enrolledTiger?._id || `img-${Date.now()}`,
+          fileName: singleFile?.name || `${payload.tigerId}_capture.jpg`,
+          filePath: finalImgPath,
+          previewUrl: singlePreviewUrl || finalImgPath,
+          tigerId: payload.tigerId,
+          tigerDetected: true,
+          reviewStatus: 'AUTO_CONFIRMED',
+          cameraStation: selectedStation,
+          timestamp: new Date()
+        };
+        return [newImgItem, ...prev.filter(img => img._id !== payload.imageId && img.tigerId !== payload.tigerId)];
+      });
 
       // Close modals
       setEnrollModalData(null);
@@ -241,7 +333,9 @@ export default function IngestPage() {
         setSelectedImageDetail(prev => ({
           ...prev,
           tigerId: payload.tigerId,
-          reviewStatus: 'AUTO_CONFIRMED'
+          reviewStatus: 'AUTO_CONFIRMED',
+          filePath: finalImgPath,
+          previewUrl: singlePreviewUrl || finalImgPath
         }));
       }
     } catch (err) {
@@ -250,6 +344,7 @@ export default function IngestPage() {
       setIsEnrolling(false);
     }
   };
+
 
   const percentComplete = progress && progress.totalImages > 0
     ? Math.round((progress.processedImages / progress.totalImages) * 100)
@@ -655,19 +750,109 @@ export default function IngestPage() {
                   <span>Input Camera Frame Preview</span>
                   <span className="text-primary">{singleFile?.name}</span>
                 </div>
-                <div className="relative aspect-[4/3] bg-black rounded-xl overflow-hidden flex items-center justify-center border border-border">
-                  <img
-                    src={singlePreviewUrl}
-                    alt="Single Preview"
-                    className="w-full h-full object-contain"
-                  />
-                  {/* Bounding reticle */}
-                  <div className="absolute inset-0 pointer-events-none border border-primary/20 flex items-center justify-center">
-                    <Target className="w-8 h-8 text-primary/40" />
+                <div className="relative min-h-[280px] max-h-[420px] bg-black/90 rounded-xl overflow-hidden flex items-center justify-center border border-border p-1">
+                  <div className="relative inline-flex items-center justify-center max-w-full max-h-full">
+                    <img
+                      src={singlePreviewUrl}
+                      alt="Single Preview"
+                      className="max-w-full max-h-[380px] w-auto h-auto object-contain select-none block rounded-lg"
+                    />
+
+                    {/* Multi-Tiger Bounding Box Reticles (Directly Overlaid on Stripe Patterns) */}
+                    {singleResult && (() => {
+                      const detectedIndividuals = (singleResult.aiAnalysis?.detected_individuals && singleResult.aiAnalysis.detected_individuals.length > 0)
+                        ? singleResult.aiAnalysis.detected_individuals
+                        : (singleResult.image?.detectedIndividuals && singleResult.image.detectedIndividuals.length > 0)
+                        ? singleResult.image.detectedIndividuals
+                        : (singleResult.image?.tigerDetected || singleResult.aiAnalysis?.tiger_detected ? [{
+                            instanceId: 1,
+                            boundingBox: singleResult.aiAnalysis?.bbox || singleResult.image?.boundingBox,
+                            stripeBoundingBox: singleResult.aiAnalysis?.bbox || singleResult.image?.boundingBox,
+                            individual: singleResult.image?.tigerId || singleResult.aiAnalysis?.individual,
+                            tigerName: singleResult.image?.tiger_name || singleResult.aiAnalysis?.tiger_name || 'Tiger #1',
+                            identificationConfidence: singleResult.image?.identificationConfidence || singleResult.aiAnalysis?.identification_confidence || 0.95
+                          }] : []);
+
+                      if (detectedIndividuals.length === 0) {
+                        return (
+                          <div className="absolute inset-0 pointer-events-none border border-primary/20 flex items-center justify-center">
+                            <Target className="w-8 h-8 text-primary/40" />
+                          </div>
+                        );
+                      }
+
+                      return detectedIndividuals.map((ind, idx) => {
+                        const isSelected = selectedInstanceIndex === idx;
+                        const boxColor = isSelected ? '#10b981' : (idx === 0 ? '#3b82f6' : '#f59e0b');
+                        const label = ind.individual || ind.tigerId || ind.tigerName || `Tiger #${ind.instanceId || idx + 1}`;
+                        const simPct = Math.round((ind.identificationConfidence || 0.92) * 100);
+
+                        // Extract normalized coordinates (0.0 to 1.0) for pixel-perfect stripe alignment
+                        let nx1 = 0.1, ny1 = 0.15, nx2 = 0.9, ny2 = 0.85;
+                        const rawNorm = ind.normalizedBoundingBox || ind.normalized_bounding_box;
+                        const rawBbox = ind.stripeBoundingBox || ind.stripe_bounding_box || ind.boundingBox || ind.bbox;
+
+                        if (rawNorm && Array.isArray(rawNorm) && rawNorm.length === 4) {
+                          [nx1, ny1, nx2, ny2] = rawNorm;
+                        } else if (rawBbox && Array.isArray(rawBbox) && rawBbox.length === 4) {
+                          const [x1, y1, x2, y2] = rawBbox;
+                          if (x2 <= 1.0 && y2 <= 1.0 && x2 > x1 && y2 > y1) {
+                            nx1 = x1; ny1 = y1; nx2 = x2; ny2 = y2;
+                          } else {
+                            const imgW = singleResult.aiAnalysis?.image_width || 679;
+                            const imgH = singleResult.aiAnalysis?.image_height || 450;
+                            nx1 = Math.min(0.95, Math.max(0, x1 / imgW));
+                            ny1 = Math.min(0.95, Math.max(0, y1 / imgH));
+                            nx2 = Math.min(1.0, Math.max(0.05, x2 / imgW));
+                            ny2 = Math.min(1.0, Math.max(0.05, y2 / imgH));
+                          }
+                        }
+
+                        const left = `${(nx1 * 100).toFixed(2)}%`;
+                        const top = `${(ny1 * 100).toFixed(2)}%`;
+                        const width = `${(Math.max(0.05, nx2 - nx1) * 100).toFixed(2)}%`;
+                        const height = `${(Math.max(0.05, ny2 - ny1) * 100).toFixed(2)}%`;
+
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => setSelectedInstanceIndex(idx)}
+                            className="absolute cursor-pointer transition-all duration-200 group rounded-md"
+                            style={{
+                              left, top, width, height,
+                              border: `2.5px solid ${boxColor}`,
+                              backgroundColor: isSelected ? `${boxColor}28` : `${boxColor}10`,
+                              boxShadow: isSelected ? `0 0 16px ${boxColor}bb` : '0 0 6px rgba(0,0,0,0.5)'
+                            }}
+                          >
+                            {/* Flank stripe crosshairs */}
+                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-70">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: boxColor }} />
+                            </div>
+
+                            {/* Tiger Identification Badge */}
+                            <span
+                              className="absolute -top-6 left-0 px-2 py-0.5 text-[10px] font-mono font-bold rounded shadow-xl flex items-center gap-1.5 whitespace-nowrap z-20 transition-transform group-hover:scale-105"
+                              style={{ backgroundColor: boxColor, color: '#ffffff' }}
+                            >
+                              <span>🐅 #{ind.instanceId || idx + 1}: {label}</span>
+                              <span className="opacity-90 font-mono">({simPct}%)</span>
+                            </span>
+
+                            <span
+                              className="absolute -bottom-5 right-0 px-1.5 py-0.5 text-[8px] font-mono font-bold rounded bg-black/80 text-white/90 border border-white/10 whitespace-nowrap"
+                            >
+                              Flank Stripe ROI
+                            </span>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </div>
             )}
+
           </div>
 
           {/* Right: Neural Decision Tree & Biometric Dossier (7 Cols) */}
@@ -677,56 +862,163 @@ export default function IngestPage() {
                 <Sparkles className="w-12 h-12 text-primary/50 mb-3 animate-pulse" />
                 <h4 className="text-base font-bold text-foreground">Awaiting Image Inference</h4>
                 <p className="text-xs text-muted-foreground max-w-sm mt-1">
-                  Upload a photo on the left to execute the 3-stage neural pipeline: Blank Classification $\to$ YOLO Localization $\to$ ResNet-50 512-D Stripe Re-ID across all 107 database tigers.
+                  Upload a photo on the left to execute the 3-stage neural pipeline: Blank Classification $\to$ Multi-Tiger Localization $\to$ ResNet-50 512-D Stripe Re-ID across all database tigers.
                 </p>
               </div>
-            ) : (
-              <div className="glass-panel p-6 rounded-2xl border border-primary/30 shadow-2xl flex flex-col gap-5 animate-in fade-in duration-300">
-                {/* Result Top Header Badge */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-                  <div>
-                    <span className="text-[10px] font-mono text-muted-foreground uppercase">Neural Triage Status</span>
-                    <h3 className="text-xl font-heading font-bold text-foreground flex items-center gap-2 mt-0.5">
-                      {singleResult.image.tigerDetected ? (
-                        singleResult.image.tigerId ? (
-                          <span className="text-emerald-400">Tiger Identified: {singleResult.image.tigerId}</span>
-                        ) : (
-                          <span className="text-amber-400">New Individual Tiger Candidate</span>
-                        )
-                      ) : singleResult.image.blank ? (
-                        <span className="text-gray-400">Quarantined Blank Scene</span>
-                      ) : (
-                        <span className="text-sky-400">Wildlife: {singleResult.image.detectedClass?.toUpperCase()}</span>
-                      )}
-                    </h3>
-                  </div>
+            ) : (() => {
+              const detectedIndividuals = (singleResult.aiAnalysis?.detected_individuals && singleResult.aiAnalysis.detected_individuals.length > 0)
+                ? singleResult.aiAnalysis.detected_individuals
+                : (singleResult.image?.detectedIndividuals && singleResult.image.detectedIndividuals.length > 0)
+                ? singleResult.image.detectedIndividuals
+                : (singleResult.image?.tigerDetected || singleResult.aiAnalysis?.tiger_detected ? [{
+                  instanceId: 1,
+                  boundingBox: singleResult.image?.boundingBox || singleResult.aiAnalysis?.bbox,
+                  stripeBoundingBox: singleResult.image?.boundingBox || singleResult.aiAnalysis?.bbox,
+                  individual: singleResult.image?.tigerId || singleResult.aiAnalysis?.individual,
+                  tigerId: singleResult.image?.tigerId || singleResult.aiAnalysis?.individual,
+                  tigerName: singleResult.image?.tiger_name || singleResult.aiAnalysis?.tiger_name || singleResult.image?.tigerId || 'Tiger #1',
+                  detectionConfidence: singleResult.image?.tigerConfidence || singleResult.aiAnalysis?.tiger_confidence || 0.95,
+                  identificationConfidence: singleResult.image?.identificationConfidence || singleResult.aiAnalysis?.identification_confidence || 0.0,
+                  status: singleResult.image?.status || singleResult.aiAnalysis?.status,
+                  reviewStatus: singleResult.image?.reviewStatus,
+                  needsReview: singleResult.image?.needsReview ?? singleResult.aiAnalysis?.needs_review,
+                  candidates: singleResult.image?.candidates || singleResult.aiAnalysis?.candidates || [],
+                  embedding: singleResult.aiAnalysis?.embedding || []
+                }] : []);
 
-                  <div className="flex items-center gap-2">
-                    <div className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
-                      singleResult.image.reviewStatus === 'AUTO_CONFIRMED'
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                        : singleResult.image.reviewStatus === 'PENDING'
-                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                        : 'bg-white/10 text-muted-foreground border-white/20'
-                    }`}>
-                      {singleResult.image.reviewStatus}
+              const activeInstance = detectedIndividuals[selectedInstanceIndex] || detectedIndividuals[0] || {};
+              const isMultiTiger = detectedIndividuals.length > 1;
+              const cands = activeInstance.candidates || [];
+              const topMatch = cands[0];
+              const rawConf = topMatch?.similarity ?? activeInstance.identificationConfidence ?? 0.0;
+              const maxSimPct = (rawConf * 100).toFixed(1);
+              const divergencePct = Math.max(0, 100 - parseFloat(maxSimPct)).toFixed(1);
+
+              return (
+                <div className="glass-panel p-6 rounded-2xl border border-primary/30 shadow-2xl flex flex-col gap-5 animate-in fade-in duration-300">
+                  {/* Result Top Header Badge */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+                    <div>
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase">Neural Triage Status</span>
+                      <h3 className="text-xl font-heading font-bold text-foreground flex items-center gap-2 mt-0.5">
+                        {singleResult.image.tigerDetected ? (
+                          isMultiTiger ? (
+                            <span className="text-emerald-400 flex items-center gap-2">
+                              <Users className="w-5 h-5 text-emerald-400" /> Multi-Tiger Scene ({detectedIndividuals.length} Individuals Detected)
+                            </span>
+                          ) : activeInstance.individual || activeInstance.tigerId ? (
+                            <span className="text-emerald-400">Tiger Identified: {activeInstance.individual || activeInstance.tigerId}</span>
+                          ) : (
+                            <span className="text-amber-400">New Individual Tiger Candidate</span>
+                          )
+                        ) : singleResult.image.blank ? (
+                          <span className="text-gray-400">Quarantined Blank Scene</span>
+                        ) : (
+                          <span className="text-sky-400">Wildlife: {singleResult.image.detectedClass?.toUpperCase()}</span>
+                        )}
+                      </h3>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className={`px-3 py-1 rounded-full text-xs font-mono font-bold border ${
+                        isMultiTiger 
+                          ? 'bg-purple-500/20 text-purple-400 border-purple-500/40'
+                          : activeInstance.reviewStatus === 'AUTO_CONFIRMED'
+                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                          : 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                      }`}>
+                        {isMultiTiger ? `MULTI_TIGER (${detectedIndividuals.length})` : (activeInstance.reviewStatus || singleResult.image.reviewStatus)}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* 🌟 REGISTER AS NEW TIGER BANNER WITH FULL PRE-ENROLLMENT SIMILARITY METRICS */}
-                {singleResult.image.tigerDetected && (!singleResult.image.tigerId || singleResult.image.reviewStatus === 'PENDING' || singleResult.image.status === 'UNKNOWN_CANDIDATE') && (() => {
-                  const cands = (singleResult.aiAnalysis?.candidates && singleResult.aiAnalysis.candidates.length > 0)
-                    ? singleResult.aiAnalysis.candidates
-                    : (singleResult.image?.candidates || []);
-                  const topMatch = cands[0];
-                  const rawConf = topMatch?.similarity ?? singleResult.aiAnalysis?.identification_confidence ?? singleResult.image?.identificationConfidence ?? 0.0;
-                  const maxSimPct = (rawConf * 100).toFixed(1);
-                  const divergencePct = Math.max(0, 100 - parseFloat(maxSimPct)).toFixed(1);
+                  {/* 🐅 MULTI-TIGER INSTANCE SELECTOR TABS */}
+                  {isMultiTiger && (
+                    <div className="flex flex-col gap-2 bg-black/60 p-3.5 rounded-2xl border border-primary/40 shadow-xl">
+                      <div className="flex items-center justify-between text-xs font-mono text-muted-foreground uppercase pb-1 border-b border-border/50">
+                        <span className="flex items-center gap-1.5 text-primary font-bold">
+                          <Users className="w-3.5 h-3.5" /> Select Tiger Instance to Inspect / Enroll
+                        </span>
+                        <span>{detectedIndividuals.length} Tigers Localized</span>
+                      </div>
 
-                  return (
+                      <div className="grid grid-cols-2 gap-2.5 pt-1">
+                        {detectedIndividuals.map((ind, idx) => {
+                          const isSelected = selectedInstanceIndex === idx;
+                          const isConfirmed = ind.tigerId && (ind.reviewStatus === 'AUTO_CONFIRMED' || ind.status === 'CONFIRMED_MATCH');
+                          const indSim = Math.round((ind.identificationConfidence || 0) * 100);
+
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setSelectedInstanceIndex(idx)}
+                              className={`p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
+                                isSelected
+                                  ? 'bg-primary/20 border-primary text-foreground shadow-md ring-1 ring-primary/40'
+                                  : 'bg-white/5 border-border/70 text-muted-foreground hover:bg-white/10 hover:text-foreground'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`w-3 h-3 rounded-full ${isSelected ? 'bg-primary animate-pulse' : 'bg-muted-foreground/50'}`} />
+                                <div className="truncate">
+                                  <div className="text-xs font-mono font-bold truncate">
+                                    Tiger #{ind.instanceId || idx + 1}: {ind.tigerId || ind.tigerName || 'Candidate'}
+                                  </div>
+                                  <div className="text-[10px] font-mono text-muted-foreground truncate">
+                                    {isConfirmed ? 'Registered in DB' : 'New Flank Pattern'}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                                isConfirmed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'
+                              }`}>
+                                {indSim}%
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 🌟 ENROLLED TIGER CONFIRMATION BANNER */}
+                  {activeInstance.tigerId && (activeInstance.reviewStatus === 'AUTO_CONFIRMED' || activeInstance.status === 'CONFIRMED_MATCH') && (
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/40 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl animate-in fade-in">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-emerald-500/20 rounded-xl text-emerald-400 border border-emerald-500/30 shrink-0">
+                          <Check className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-foreground flex items-center gap-2">
+                            Tiger #{activeInstance.instanceId || selectedInstanceIndex + 1} Registered: <span className="text-emerald-400 font-mono">{activeInstance.tigerId}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5 font-mono">
+                            Individual signature confirmed and mapped in Pench Reserve database.
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to="/map"
+                          className="px-3.5 py-1.5 bg-primary text-primary-foreground font-bold text-xs rounded-lg hover:bg-primary/90 flex items-center gap-1.5 font-mono transition-colors shadow-sm"
+                        >
+                          <MapPin className="w-3.5 h-3.5" /> View Map
+                        </Link>
+                        <Link
+                          to={`/tigers/${activeInstance.tigerId}`}
+                          className="px-3.5 py-1.5 bg-muted/40 text-foreground font-bold text-xs rounded-lg hover:bg-muted/60 flex items-center gap-1.5 font-mono transition-colors border border-border"
+                        >
+                          <Fingerprint className="w-3.5 h-3.5" /> Profile
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 🌟 REGISTER AS NEW TIGER BANNER */}
+                  {singleResult.image.tigerDetected && (!activeInstance.tigerId || activeInstance.reviewStatus === 'PENDING' || activeInstance.status === 'UNKNOWN_CANDIDATE') && (
                     <div className="p-5 bg-gradient-to-br from-amber-500/15 via-black/60 to-emerald-500/10 border border-amber-400/40 rounded-2xl flex flex-col gap-4 shadow-2xl animate-in fade-in">
-                      {/* Top Row: Title + Max Similarity Badge */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-amber-400/20 rounded-xl text-amber-400 border border-amber-400/30 shrink-0">
@@ -734,13 +1026,13 @@ export default function IngestPage() {
                           </div>
                           <div>
                             <div className="text-sm font-bold text-foreground flex items-center gap-2">
-                              New Individual Tiger Detected
+                              Tiger #{activeInstance.instanceId || selectedInstanceIndex + 1}: New Individual Candidate
                               <span className="text-[10px] font-mono font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full">
-                                Unregistered Flank Pattern
+                                Unregistered Flank
                               </span>
                             </div>
                             <div className="text-xs text-muted-foreground mt-0.5">
-                              Pre-Registration Biometric Check: Flank print compared against all 107 database tigers.
+                              Pre-Registration Biometric Check: Flank print compared against all database tigers.
                             </div>
                           </div>
                         </div>
@@ -752,10 +1044,10 @@ export default function IngestPage() {
                         </div>
                       </div>
 
-                      {/* Middle: Pre-Registration Similarity Breakdown vs Existing Tigers */}
+                      {/* Similarity vs Existing Tigers */}
                       <div className="flex flex-col gap-2 bg-black/40 p-3.5 rounded-xl border border-white/5">
                         <div className="text-[11px] font-mono text-muted-foreground uppercase flex justify-between">
-                          <span>Similarity to Nearest Registered Tigers in DB:</span>
+                          <span>Nearest Registered Matches:</span>
                           <span className="text-amber-400 font-bold">Highest Match: {maxSimPct}% (Below 52.5% threshold)</span>
                         </div>
 
@@ -798,173 +1090,177 @@ export default function IngestPage() {
                         </div>
 
                         <button
-                          onClick={() => openEnrollModal(singleResult.image, singleResult.aiAnalysis?.embedding)}
+                          type="button"
+                          onClick={() => openEnrollModal(singleResult.image, activeInstance.embedding, activeInstance)}
                           className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 cinematic-glow"
                         >
-                          <UserPlus className="w-4 h-4" /> Register as New Tiger in DB
+                          <UserPlus className="w-4 h-4" /> Enroll Tiger #{activeInstance.instanceId || selectedInstanceIndex + 1} in DB
                         </button>
                       </div>
                     </div>
-                  );
-                })()}
+                  )}
 
-                {/* 3-Stage Pipeline Breakdown */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Stage 1 */}
-                  <div className="bg-black/30 p-3.5 rounded-xl border border-border/60">
-                    <div className="text-[10px] font-mono text-muted-foreground uppercase">Stage 1: Blank Triage</div>
-                    <div className="text-sm font-bold text-foreground mt-1">
-                      {singleResult.image.blank ? 'BLANK (Quarantined)' : 'NON-BLANK (Subject Present)'}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mt-1">
-                      Confidence: <strong>{Math.round((singleResult.image.blankConfidence || 0) * 100)}%</strong>
-                    </div>
-                  </div>
-
-                  {/* Stage 2 */}
-                  <div className="bg-black/30 p-3.5 rounded-xl border border-border/60">
-                    <div className="text-[10px] font-mono text-muted-foreground uppercase">Stage 2: YOLO Detection</div>
-                    <div className="text-sm font-bold text-foreground mt-1">
-                      {singleResult.image.tigerDetected ? 'Tiger Flank Localized' : (singleResult.image.detectedClass || 'None')}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mt-1">
-                      Detection: <strong>{Math.round((singleResult.image.tigerConfidence || 0.95) * 100)}%</strong>
-                    </div>
-                  </div>
-
-                  {/* Stage 3 */}
-                  <div className="bg-black/30 p-3.5 rounded-xl border border-border/60">
-                    <div className="text-[10px] font-mono text-muted-foreground uppercase">Stage 3: ResNet-50 Re-ID</div>
-                    <div className="text-sm font-bold text-primary mt-1">
-                      {singleResult.image.tigerId || 'Unknown Individual'}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mt-1">
-                      Cosine Sim: <strong>{Math.round((singleResult.image.identificationConfidence || 0) * 100)}%</strong>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Side-by-Side Visual Match Comparison */}
-                {singleResult.image.tigerDetected && singleResult.image.candidates && singleResult.image.candidates.length > 0 && (
-                  <div className="bg-black/40 p-4 rounded-xl border border-primary/30 flex flex-col gap-3">
-                    <div className="text-xs font-mono font-bold text-primary uppercase flex items-center justify-between">
-                      <span>Visual Stripe Re-ID Comparison</span>
-                      <span>Cosine Similarity: {(singleResult.image.identificationConfidence * 100).toFixed(1)}%</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 items-center">
-                      {/* Query Image */}
-                      <div className="flex flex-col gap-1">
-                        <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden border border-border">
-                          <img
-                            src={singlePreviewUrl}
-                            alt="Query"
-                            className="w-full h-full object-contain"
-                          />
-                          <span className="absolute bottom-1.5 left-1.5 bg-black/80 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
-                            Query Capture
-                          </span>
-                        </div>
-                        <div className="text-[10px] font-mono text-muted-foreground truncate">{singleFile?.name}</div>
+                  {/* 3-Stage Pipeline Breakdown */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Stage 1 */}
+                    <div className="bg-black/30 p-3.5 rounded-xl border border-border/60">
+                      <div className="text-[10px] font-mono text-muted-foreground uppercase">Stage 1: Blank Triage</div>
+                      <div className="text-sm font-bold text-foreground mt-1">
+                        {singleResult.image.blank ? 'BLANK (Quarantined)' : 'NON-BLANK (Subject Present)'}
                       </div>
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        Confidence: <strong>{Math.round((singleResult.image.blankConfidence || 0) * 100)}%</strong>
+                      </div>
+                    </div>
 
-                      {/* Best Matched Database Prototype */}
-                      <div className="flex flex-col gap-1">
-                        <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden border border-primary/50">
-                          <img
-                            src={getImageUrl(singleResult.image.candidates[0]?.representativeImage || singleResult.image.representativeImage)}
-                            alt="Matched Reference"
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = 'https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=500&q=80';
-                            }}
-                          />
-                          <span className="absolute bottom-1.5 left-1.5 bg-emerald-700/90 text-white text-[9px] font-mono px-1.5 py-0.5 rounded font-bold">
-                            DB Match: {singleResult.image.candidates[0]?.tigerId}
-                          </span>
-                        </div>
-                        <div className="text-[10px] font-mono text-primary font-bold truncate">
-                          {singleResult.image.candidates[0]?.name || singleResult.image.tigerId}
-                        </div>
+                    {/* Stage 2 */}
+                    <div className="bg-black/30 p-3.5 rounded-xl border border-border/60">
+                      <div className="text-[10px] font-mono text-muted-foreground uppercase">Stage 2: YOLO Detection</div>
+                      <div className="text-sm font-bold text-foreground mt-1">
+                        {isMultiTiger ? `${detectedIndividuals.length} Tigers Localized` : (singleResult.image.tigerDetected ? 'Tiger Flank Localized' : (singleResult.image.detectedClass || 'None'))}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        Detection: <strong>{Math.round((activeInstance.detectionConfidence || singleResult.image.tigerConfidence || 0.95) * 100)}%</strong>
+                      </div>
+                    </div>
+
+                    {/* Stage 3 */}
+                    <div className="bg-black/30 p-3.5 rounded-xl border border-border/60">
+                      <div className="text-[10px] font-mono text-muted-foreground uppercase">Stage 3: ResNet-50 Re-ID</div>
+                      <div className="text-sm font-bold text-primary mt-1">
+                        {activeInstance.individual || activeInstance.tigerId || 'Unknown Individual'}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        Cosine Sim: <strong>{Math.round((activeInstance.identificationConfidence || 0) * 100)}%</strong>
                       </div>
                     </div>
                   </div>
-                )}
 
-                {/* Candidate Ranking List (Across All 107 Tigers) */}
-                {singleResult.image.candidates && singleResult.image.candidates.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <div className="text-xs font-mono font-bold text-muted-foreground uppercase flex justify-between">
-                      <span>Top Matches (Searched across all 107 Tigers in DB)</span>
-                      <span className="text-primary">107 Total Identities</span>
+                  {/* Side-by-Side Visual Match Comparison */}
+                  {singleResult.image.tigerDetected && (
+                    <div className="bg-black/40 p-4 rounded-xl border border-primary/30 flex flex-col gap-3">
+                      <div className="text-xs font-mono font-bold text-primary uppercase flex items-center justify-between">
+                        <span>Tiger #{activeInstance.instanceId || selectedInstanceIndex + 1} Stripe Comparison</span>
+                        <span>Cosine Similarity: {((activeInstance.identificationConfidence || 0) * 100).toFixed(1)}%</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 items-center">
+                        {/* Query Image */}
+                        <div className="flex flex-col gap-1">
+                          <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden border border-border">
+                            <img
+                              src={singlePreviewUrl || getImageUrl(singleResult.image.filePath)}
+                              alt="Query"
+                              className="w-full h-full object-contain"
+                            />
+                            <span className="absolute bottom-1.5 left-1.5 bg-black/80 text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
+                              Query Capture #{activeInstance.instanceId || selectedInstanceIndex + 1}
+                            </span>
+                          </div>
+                          <div className="text-[10px] font-mono text-muted-foreground truncate">{singleFile?.name || 'Inputted Frame'}</div>
+                        </div>
+
+                        {/* Best Matched / Registered Database Prototype */}
+                        <div className="flex flex-col gap-1">
+                          <div className="relative aspect-[4/3] bg-black rounded-lg overflow-hidden border border-primary/50">
+                            <img
+                              src={
+                                activeInstance.tigerId && (activeInstance.reviewStatus === 'AUTO_CONFIRMED' || activeInstance.status === 'CONFIRMED_MATCH')
+                                  ? (singlePreviewUrl || getImageUrl(activeInstance.representativeImage || singleResult.image.representativeImage || singleResult.image.filePath))
+                                  : getImageUrl(cands[0]?.representativeImage || singleResult.image.representativeImage || singlePreviewUrl)
+                              }
+                              alt="Matched Reference"
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=500&q=80';
+                              }}
+                            />
+                            <span className="absolute bottom-1.5 left-1.5 bg-emerald-700/90 text-white text-[9px] font-mono px-1.5 py-0.5 rounded font-bold">
+                              {activeInstance.tigerId ? 'DB Registered:' : 'DB Match:'} {activeInstance.tigerId || cands[0]?.tigerId}
+                            </span>
+                          </div>
+                          <div className="text-[10px] font-mono text-primary font-bold truncate">
+                            {activeInstance.tigerName || activeInstance.individual || cands[0]?.name || 'Candidate Match'}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-2 bg-black/40 p-4 rounded-xl border border-border">
-                      {singleResult.image.candidates.map((cand, idx) => {
-                        const simPct = Math.round(cand.similarity * 100);
-                        const isTop = idx === 0;
-                        const candImg = getImageUrl(cand.representativeImage);
-                        return (
-                          <div key={cand.tigerId || idx} className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-white/5 transition-colors">
-                            {/* Candidate Thumbnail */}
-                            <div className="w-12 h-9 bg-black rounded overflow-hidden border border-border shrink-0">
-                              <img
-                                src={candImg}
-                                alt={cand.tigerId}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = 'https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=500&q=80';
-                                }}
-                              />
-                            </div>
+                  )}
 
-                            {/* Candidate Score & Bar */}
-                            <div className="flex-1 flex flex-col gap-1">
-                              <div className="flex justify-between items-center text-xs font-mono">
-                                <span>
-                                  <strong className={isTop ? 'text-primary' : 'text-foreground'}>
-                                    #{idx + 1} {cand.tigerId}
-                                  </strong>
-                                  <span className="text-muted-foreground ml-2 text-[11px]">({cand.name})</span>
-                                </span>
-                                <span className={`font-bold ${isTop ? 'text-primary' : 'text-muted-foreground'}`}>
-                                  {cand.similarity.toFixed(4)} ({simPct}%)
-                                </span>
-                              </div>
-                              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full ${
-                                    isTop ? 'bg-primary' : 'bg-muted-foreground/50'
-                                  }`}
-                                  style={{ width: `${Math.max(5, simPct)}%` }}
+                  {/* Candidate Ranking List */}
+                  {cands && cands.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <div className="text-xs font-mono font-bold text-muted-foreground uppercase flex justify-between">
+                        <span>Top Matches for Tiger #{activeInstance.instanceId || selectedInstanceIndex + 1}</span>
+                        <span className="text-primary">Searched Database</span>
+                      </div>
+                      <div className="flex flex-col gap-2 bg-black/40 p-4 rounded-xl border border-border">
+                        {cands.map((cand, idx) => {
+                          const simPct = Math.round(cand.similarity * 100);
+                          const isTop = idx === 0;
+                          const candImg = getImageUrl(cand.representativeImage);
+                          return (
+                            <div key={cand.tigerId || idx} className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-white/5 transition-colors">
+                              <div className="w-12 h-9 bg-black rounded overflow-hidden border border-border shrink-0">
+                                <img
+                                  src={candImg}
+                                  alt={cand.tigerId}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = 'https://images.unsplash.com/photo-1561731216-c3a4d99437d5?w=500&q=80';
+                                  }}
                                 />
                               </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
 
-                {/* Raw 512-D Normalized Vector Preview */}
-                {singleResult.aiAnalysis?.embedding && (
-                  <div className="p-3 bg-black/40 rounded-xl border border-border/60">
-                    <div className="text-[10px] font-mono text-muted-foreground uppercase mb-1.5 flex items-center justify-between">
-                      <span>Biometric Stripe Vector (512-D L2-Normalized)</span>
-                      <span className="text-primary font-bold">||e|| = 1.0000</span>
+                              <div className="flex-1 flex flex-col gap-1">
+                                <div className="flex justify-between items-center text-xs font-mono">
+                                  <span>
+                                    <strong className={isTop ? 'text-primary' : 'text-foreground'}>
+                                      #{idx + 1} {cand.tigerId}
+                                    </strong>
+                                    <span className="text-muted-foreground ml-2 text-[11px]">({cand.name})</span>
+                                  </span>
+                                  <span className={`font-bold ${isTop ? 'text-primary' : 'text-muted-foreground'}`}>
+                                    {cand.similarity.toFixed(4)} ({simPct}%)
+                                  </span>
+                                </div>
+                                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${
+                                      isTop ? 'bg-primary' : 'bg-muted-foreground/50'
+                                    }`}
+                                    style={{ width: `${Math.max(5, simPct)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="font-mono text-[10px] text-emerald-400/90 break-all bg-black/60 p-2 rounded border border-white/5">
-                      [{singleResult.aiAnalysis.embedding.slice(0, 16).map(v => v.toFixed(4)).join(', ')}, ...]
+                  )}
+
+                  {/* Raw 512-D Normalized Vector Preview */}
+                  {activeInstance.embedding && activeInstance.embedding.length > 0 && (
+                    <div className="p-3 bg-black/40 rounded-xl border border-border/60">
+                      <div className="text-[10px] font-mono text-muted-foreground uppercase mb-1.5 flex items-center justify-between">
+                        <span>Biometric Stripe Vector for Tiger #{activeInstance.instanceId || selectedInstanceIndex + 1}</span>
+                        <span className="text-primary font-bold">||e|| = 1.0000</span>
+                      </div>
+                      <div className="font-mono text-[10px] text-emerald-400/90 break-all bg-black/60 p-2 rounded border border-white/5">
+                        [{activeInstance.embedding.slice(0, 16).map(v => v.toFixed(4)).join(', ')}, ...]
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
+
 
       {/* ========================================================================= */}
       {/* MODAL 1: DETAILED IMAGE INSPECTION MODAL */}
@@ -1091,7 +1387,7 @@ export default function IngestPage() {
                 </div>
                 <div>
                   <h3 className="font-heading font-bold text-foreground text-lg">
-                    Enroll New Tiger into Biometric DB
+                    Enroll New Tiger into Biometric DB {enrollModalData.instanceId ? `(Instance #${enrollModalData.instanceId})` : ''}
                   </h3>
                   <p className="text-[11px] text-muted-foreground">
                     Assign a permanent ID and register this individual's 512-D stripe signature.

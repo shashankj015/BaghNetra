@@ -64,9 +64,25 @@ exports.uploadSingleImage = async (req, res) => {
     // Run AI Triage
     const aiRes = await aiClient.processImage(filePath);
     
+    const detectedIndividuals = (aiRes.detected_individuals && aiRes.detected_individuals.length > 0)
+      ? aiRes.detected_individuals
+      : (aiRes.tiger_detected ? [{
+          instanceId: 1,
+          boundingBox: aiRes.bbox,
+          individual: aiRes.individual,
+          tigerId: aiRes.individual,
+          tigerName: aiRes.tiger_name,
+          detectionConfidence: aiRes.tiger_confidence,
+          identificationConfidence: aiRes.identification_confidence,
+          status: aiRes.status,
+          needsReview: aiRes.needs_review,
+          candidates: aiRes.candidates || [],
+          embedding: aiRes.embedding || []
+        }] : []);
+
     const imgDoc = new Image({
       fileName: req.file.originalname,
-      filePath: filePath,
+      filePath: `/uploads/${req.file.filename}`,
       fileSize: req.file.size,
       cameraStation: station.stationId,
       latitude: (aiRes.exif && aiRes.exif.latitude) || station.latitude,
@@ -75,12 +91,17 @@ exports.uploadSingleImage = async (req, res) => {
       blank: aiRes.blank,
       blankConfidence: aiRes.blank_confidence,
       tigerDetected: aiRes.tiger_detected,
+      tigerCount: detectedIndividuals.length,
       tigerConfidence: aiRes.tiger_confidence,
       detectedClass: aiRes.detected_class,
       boundingBox: aiRes.bbox,
+      detectedIndividuals: detectedIndividuals,
       tigerId: aiRes.individual,
+      suggestedTigerId: aiRes.individual,
       identificationConfidence: aiRes.identification_confidence,
-      reviewStatus: aiRes.blank ? 'QUARANTINED' : (aiRes.needs_review ? 'PENDING' : 'AUTO_CONFIRMED'),
+      reviewStatus: aiRes.blank 
+        ? 'QUARANTINED' 
+        : (detectedIndividuals.length > 1 ? 'MULTI_TIGER' : (aiRes.needs_review ? 'PENDING' : 'AUTO_CONFIRMED')),
       candidates: aiRes.candidates || [],
       modelVersion: aiRes.model_version
     });
@@ -88,6 +109,30 @@ exports.uploadSingleImage = async (req, res) => {
 
     if (aiRes.blank) {
       await quarantineService.stageBlankImage(imgDoc, filePath);
+    }
+
+    // Record movement telemetry and update spatial territory for each confirmed tiger instance
+    if (aiRes.tiger_detected && detectedIndividuals.length > 0) {
+      const MovementRecord = require('../models/MovementRecord');
+      const occupancyService = require('../services/occupancyService');
+
+      for (const ind of detectedIndividuals) {
+        if (ind.individual && !ind.needsReview) {
+          const moveRec = new MovementRecord({
+            tigerId: ind.individual,
+            imageId: imgDoc._id,
+            stationId: station.stationId,
+            zone: station.zone || 'CORE',
+            latitude: imgDoc.latitude,
+            longitude: imgDoc.longitude,
+            timestamp: imgDoc.timestamp,
+            confidence: ind.identificationConfidence || 0.95,
+            runId: 'SINGLE_UPLOAD'
+          });
+          await moveRec.save();
+          await occupancyService.regenerateTigerOccupancy(ind.individual);
+        }
+      }
     }
 
     res.status(201).json({

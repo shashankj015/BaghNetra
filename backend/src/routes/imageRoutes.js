@@ -10,6 +10,20 @@ router.post('/quarantine/:id/restore', imageController.restoreQuarantine);
 router.get('/analytics', imageController.getDashboardAnalytics);
 router.get('/:id', imageController.getImageById);
 router.get('/:id/file', imageController.serveImageFile);
-router.post('/upload', upload.single('file'), imageController.uploadSingleImage);
+
+// Support both /upload and /upload-single with either 'file' or 'image' field
+const flexibleUpload = (req, res, next) => {
+  upload.any()(req, res, (err) => {
+    if (err) return next(err);
+    if (req.files && req.files.length > 0) {
+      req.file = req.files[0];
+    }
+    next();
+  });
+};
+
+router.post('/upload', flexibleUpload, imageController.uploadSingleImage);
+router.post('/upload-single', flexibleUpload, imageController.uploadSingleImage);
 
 module.exports = router;
+

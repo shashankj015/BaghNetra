@@ -158,32 +158,85 @@ class BaghNetraAIPipeline:
         status = "NON_TIGER_ANIMAL"
         candidates = []
         embedding = []
+        detected_individuals = []
         
+        tiger_detections = det_res.get("tiger_detections", [])
+        if not tiger_detections and detected_class == "tiger":
+            tiger_detections = [{"class": "tiger", "confidence": det_res.get("confidence", 0.88), "bbox": bbox}]
+
         if detected_class == "human":
             # Human Detection (Forest patrol, field staff, tourists) -> Privacy Compliance Triage
             tiger_detected = False
             status = "DETECTED_HUMAN"
             needs_review = False
             has_human = True
-        elif detected_class == "tiger":
-            tiger_crop = crop_bounding_box(img, bbox)
-            flank_crop = isolate_flank_region(tiger_crop)
-            
-            # 5. Stripe Re-Identification
-            id_res = self.tiger_identifier.identify(
-                tiger_crop=tiger_crop,
-                high_threshold=h_id_thresh,
-                low_threshold=l_id_thresh
-            )
-            
+        elif len(tiger_detections) > 0:
             tiger_detected = True
-            candidates = id_res.get("candidates", [])
-            embedding = id_res.get("embedding", [])
-            id_confidence = id_res.get("identification_confidence", 0.0)
-            individual = id_res.get("individual")
-            tiger_name = id_res.get("tiger_name")
-            needs_review = id_res.get("needs_review", False)
-            status = id_res.get("status", "CONFIRMED_MATCH")
+            
+            for idx, t_det in enumerate(tiger_detections):
+                t_bbox = t_det["bbox"]
+                t_conf = t_det["confidence"]
+                
+                # Compute exact tiger pixel coordinates
+                bx1, by1, bx2, by2 = t_bbox
+                if max(bx1, by1, bx2, by2) <= 1.0:
+                    bx1, bx2 = bx1 * w, bx2 * w
+                    by1, by2 = by1 * h, by2 * h
+
+                bw = max(10, bx2 - bx1)
+                bh = max(10, by2 - by1)
+                
+                # Point directly at the flank stripe pattern region (center ribcage zone)
+                stripe_x1 = round(max(0, bx1 + bw * 0.18), 1)
+                stripe_y1 = round(max(0, by1 + bh * 0.15), 1)
+                stripe_x2 = round(min(w, bx1 + bw * 0.82), 1)
+                stripe_y2 = round(min(h, by1 + bh * 0.85), 1)
+
+                stripe_bbox = [stripe_x1, stripe_y1, stripe_x2, stripe_y2]
+                norm_stripe_bbox = [
+                    round(stripe_x1 / w, 4),
+                    round(stripe_y1 / h, 4),
+                    round(stripe_x2 / w, 4),
+                    round(stripe_y2 / h, 4)
+                ]
+
+                tiger_crop = crop_bounding_box(img, [bx1, by1, bx2, by2])
+                flank_crop = isolate_flank_region(tiger_crop)
+                
+                # 5. Stripe Re-Identification for this individual
+                id_res = self.tiger_identifier.identify(
+                    tiger_crop=tiger_crop,
+                    high_threshold=h_id_thresh,
+                    low_threshold=l_id_thresh
+                )
+                
+                ind_info = {
+                    "instanceId": idx + 1,
+                    "boundingBox": stripe_bbox,
+                    "stripeBoundingBox": stripe_bbox,
+                    "bodyBoundingBox": [round(bx1, 1), round(by1, 1), round(bx2, 1), round(by2, 1)],
+                    "normalizedBoundingBox": norm_stripe_bbox,
+                    "detectionConfidence": round(float(t_conf), 3),
+                    "individual": id_res.get("individual"),
+                    "tigerName": id_res.get("tiger_name") or id_res.get("individual") or f"Tiger #{idx + 1}",
+                    "identificationConfidence": round(float(id_res.get("identification_confidence", 0.0)), 3),
+                    "status": id_res.get("status", "CONFIRMED_MATCH"),
+                    "needsReview": id_res.get("needs_review", False),
+                    "candidates": id_res.get("candidates", []),
+                    "embedding": id_res.get("embedding", [])
+                }
+                detected_individuals.append(ind_info)
+            
+            # Primary individual values for backward-compatibility
+            primary = detected_individuals[0]
+            bbox = primary["boundingBox"]
+            individual = primary["individual"]
+            tiger_name = primary["tigerName"]
+            id_confidence = primary["identificationConfidence"]
+            needs_review = any(ind["needsReview"] for ind in detected_individuals)
+            status = "MULTI_TIGER_DETECTED" if len(detected_individuals) > 1 else primary["status"]
+            candidates = primary["candidates"]
+            embedding = primary["embedding"]
         elif detected_class == "other_animal":
             tiger_detected = False
             status = "NON_TIGER_ANIMAL"
@@ -199,14 +252,18 @@ class BaghNetraAIPipeline:
         
         return {
             "fileName": filename,
+            "image_width": w,
+            "image_height": h,
             "blank": False,
             "blank_confidence": blank_res["blank_confidence"],
             "non_blank_confidence": blank_res["non_blank_confidence"],
             "tiger_detected": tiger_detected,
+            "tiger_count": len(detected_individuals),
             "tiger_confidence": det_res["confidence"] if tiger_detected else 0.0,
             "detected_class": det_res["class"],
             "bbox": bbox,
             "all_detections": det_res.get("all_detections", []),
+            "detected_individuals": detected_individuals,
             "individual": individual,
             "tiger_name": tiger_name,
             "identification_confidence": id_confidence,
@@ -217,5 +274,7 @@ class BaghNetraAIPipeline:
             "has_human": has_human,
             "exif": exif,
             "processing_time_ms": round(elapsed * 1000, 2),
-            "model_version": "YOLOv8-Tiger+ResNet50ReID-v1.0"
+            "model_version": "YOLOv8-Tiger+ResNet50ReID-v2.0"
         }
+
+

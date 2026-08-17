@@ -268,6 +268,14 @@ class BatchIngestService {
         await movementService.analyzeRunMovement(runId, newMovementRecords);
       }
 
+      // Generate post-run spatial dossier for forest management
+      try {
+        const spatialSummary = await occupancyService.generateRunSpatialDossier(runId);
+        runDoc.spatialSummary = spatialSummary;
+      } catch (spatialErr) {
+        console.error(`[BatchIngest] Error computing spatial dossier for run ${runId}:`, spatialErr.message);
+      }
+
       const totalElapsed = (Date.now() - startTime) / 1000;
       runDoc.status = 'COMPLETED';
       runDoc.completedAt = new Date();

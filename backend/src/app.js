@@ -11,6 +11,7 @@ const runRoutes = require('./routes/runRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const alertRoutes = require('./routes/alertRoutes');
 const modelRoutes = require('./routes/modelRoutes');
+const exportRoutes = require('./routes/exportRoutes');
 
 const app = express();
 
@@ -42,6 +43,8 @@ app.use('/api/runs', runRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/models', modelRoutes);
+app.use('/api/export', exportRoutes);
+
 
 app.get('/api/health', (req, res) => {
   res.json({

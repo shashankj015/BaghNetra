@@ -52,6 +52,10 @@ const ImageSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  tigerCount: {
+    type: Number,
+    default: 0
+  },
   tigerConfidence: {
     type: Number,
     default: 0.0
@@ -62,6 +66,31 @@ const ImageSchema = new mongoose.Schema({
   },
   boundingBox: [{
     type: Number
+  }],
+  detectedIndividuals: [{
+    instanceId: Number,
+    boundingBox: [Number],
+    stripeBoundingBox: [Number],
+    bodyBoundingBox: [Number],
+    normalizedBoundingBox: [Number],
+    individual: String,
+    tigerId: String,
+    tigerName: String,
+    detectionConfidence: Number,
+    identificationConfidence: Number,
+    status: String,
+    reviewStatus: {
+      type: String,
+      default: 'PENDING'
+    },
+    needsReview: Boolean,
+    candidates: [{
+      tigerId: String,
+      name: String,
+      similarity: Number,
+      representativeImage: String
+    }],
+    embedding: [Number]
   }],
   tigerId: {
     type: String,
@@ -77,7 +106,7 @@ const ImageSchema = new mongoose.Schema({
   },
   reviewStatus: {
     type: String,
-    enum: ['PENDING', 'CONFIRMED', 'REASSIGNED', 'NEW_ENROLLED', 'REJECTED', 'AUTO_CONFIRMED', 'QUARANTINED'],
+    enum: ['PENDING', 'CONFIRMED', 'REASSIGNED', 'NEW_ENROLLED', 'REJECTED', 'AUTO_CONFIRMED', 'QUARANTINED', 'MULTI_TIGER'],
     default: 'PENDING'
   },
   candidates: [{
@@ -89,7 +118,7 @@ const ImageSchema = new mongoose.Schema({
   }],
   modelVersion: {
     type: String,
-    default: 'BaghNetra-Pipeline-v1.0'
+    default: 'BaghNetra-Pipeline-v2.0'
   },
   runId: {
     type: String,

@@ -9,10 +9,24 @@ import api from '../services/api';
 
 const getImageUrl = (path) => {
   if (!path) return '';
-  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+  if (typeof path !== 'string') return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) {
     return path;
   }
-  const clean = path.replace(/^\/+/, '');
+  let clean = path;
+  if (clean.includes('/uploads/')) {
+    clean = 'uploads/' + clean.split('/uploads/').pop();
+  } else if (clean.includes('\\uploads\\')) {
+    clean = 'uploads/' + clean.split('\\uploads\\').pop();
+  } else if (clean.includes('/sample-data/')) {
+    clean = 'sample-data/' + clean.split('/sample-data/').pop();
+  } else if (clean.includes('/re-id/')) {
+    clean = 're-id/' + clean.split('/re-id/').pop();
+  } else if (clean.includes('/re id/')) {
+    clean = 're-id/' + clean.split('/re id/').pop();
+  } else {
+    clean = clean.replace(/^\/+/, '');
+  }
   return `http://localhost:5000/${clean}`;
 };
 
