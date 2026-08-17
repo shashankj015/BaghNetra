@@ -41,7 +41,11 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "BaghNetra-AI-Service",
+<<<<<<< HEAD
+        "version": "2.0.0",
+=======
         "version": "1.0.0",
+>>>>>>> origin/Trivedi-branch
         "device": DEVICE,
         "models_loaded": {
             "blank_detector": pipeline.blank_detector.is_loaded,
@@ -78,6 +82,9 @@ async def get_model_status():
                 "status": "active" if pipeline.blank_detector.is_loaded else "standby",
                 "model_path": str(BLANK_MODEL_PATH),
                 "weights_exist": BLANK_MODEL_PATH.exists(),
+<<<<<<< HEAD
+                "metrics": blank_metrics or {"evaluation_note": "No measured metrics available."}
+=======
                 "metrics": blank_metrics or {
                     "accuracy": 0.942,
                     "precision": 0.951,
@@ -85,6 +92,7 @@ async def get_model_status():
                     "f1_score": 0.944,
                     "evaluation_note": "Trained with low false-negative objective to protect wildlife frames"
                 }
+>>>>>>> origin/Trivedi-branch
             },
             {
                 "name": "Tiger / Animal Detector",
@@ -94,6 +102,13 @@ async def get_model_status():
                 "status": "active" if pipeline.tiger_detector.is_loaded else "standby",
                 "model_path": str(TIGER_DETECTOR_PATH),
                 "weights_exist": TIGER_DETECTOR_PATH.exists(),
+<<<<<<< HEAD
+                "metrics": tiger_metrics or {"evaluation_note": "No measured metrics available."}
+            },
+            {
+                "name": "Individual Tiger Re-Identifier",
+                "architecture": "StripeEmbeddingNet-V2 (Spatial CNN + Triplet + Identity Classification)",
+=======
                 "metrics": tiger_metrics or {
                     "mAP50": 0.918,
                     "mAP50_95": 0.764,
@@ -103,12 +118,20 @@ async def get_model_status():
             },
             {
                 "name": "Individual Tiger Re-Identifier",
+<<<<<<< HEAD
                 "architecture": "ResNet-50 Deep Metric Learning (512-D Unit Hypersphere)",
+=======
+                "architecture": "Custom 4-Layer Metric CNN (Triplet Margin Loss)",
+>>>>>>> origin/Trivedi-branch
+>>>>>>> 0989a0d4ec7d9d53e4bede838848da01e6fec872
                 "task": "Flank Stripe Pattern Feature Extraction & Cosine Re-Identification",
                 "version": "v2.0-ATRW",
                 "status": "active" if pipeline.tiger_identifier.is_loaded else "standby",
                 "model_path": str(TIGER_IDENTIFIER_PATH),
                 "weights_exist": TIGER_IDENTIFIER_PATH.exists(),
+<<<<<<< HEAD
+                "metrics": id_metrics or {"evaluation_note": "No measured metrics available."},
+=======
                 "metrics": id_metrics or {
                     "top1_accuracy": 1.000,
                     "top5_accuracy": 1.000,
@@ -119,6 +142,7 @@ async def get_model_status():
                     "mean_negative_similarity": 0.0175,
                     "false_match_rate": 0.010
                 },
+>>>>>>> origin/Trivedi-branch
                 "reference_tigers_enrolled": len(pipeline.tiger_identifier.known_tigers)
             }
         ]

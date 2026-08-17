@@ -121,3 +121,23 @@ def preprocess_for_embedding(image: Image.Image, target_size: Tuple[int, int] = 
 def preprocess_for_classification(image: Image.Image, target_size: Tuple[int, int] = (224, 224)) -> np.ndarray:
     """Preprocess image for Blank / Non-Blank classifier."""
     return preprocess_for_embedding(image, target_size)
+<<<<<<< HEAD
+
+
+def extract_flank_views(tiger_crop: Image.Image):
+    """Create robust body/flank views without pretending to have pose estimation.
+    The views cover the full crop plus left/center/right body regions and are
+    averaged by the Re-ID model to reduce sensitivity to framing.
+    """
+    img = tiger_crop.convert("RGB")
+    w, h = img.size
+    views = [img]
+    if w >= 4 and h >= 4:
+        views.extend([
+            img.crop((0, int(0.10*h), int(0.65*w), int(0.90*h))),
+            img.crop((int(0.20*w), int(0.10*h), int(0.80*w), int(0.90*h))),
+            img.crop((int(0.35*w), int(0.10*h), w, int(0.90*h))),
+        ])
+    return views
+=======
+>>>>>>> origin/Trivedi-branch

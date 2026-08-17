@@ -52,6 +52,17 @@ export default function LeafletTigerMap({
   sightings = [],
   center = [21.6950, 79.3500],
   zoom = 11,
+<<<<<<< HEAD
+  height = '500px',
+  selectedTigerId = null
+}) {
+  return (
+    <div style={{ height, width: '100%', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        style={{ height: '100%', width: '100%' }}
+=======
   height = '100%',
   selectedTigerId = null,
   className = ''
@@ -68,6 +79,7 @@ export default function LeafletTigerMap({
         center={center}
         zoom={zoom}
         className="w-full h-full z-0"
+>>>>>>> origin/Trivedi-branch
         scrollWheelZoom={true}
       >
         <ChangeView center={center} zoom={zoom} />

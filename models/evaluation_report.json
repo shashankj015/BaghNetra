@@ -1,4 +1,11 @@
 {
+<<<<<<< HEAD
+  "version": "2.0.0",
+  "blank_detector": {
+    "model_name": "BlankClassifier-MobileNetV3",
+    "training_date": "2026-08-16 20:20:13",
+    "architecture": "MobileNetV3-Small fine-tuned with non-blank weighted loss + camera-trap augmentation",
+=======
   "timestamp": "2026-08-17 00:23:01",
   "jurisdiction": "Pench Tiger Reserve",
   "blank_detector": {
@@ -11,6 +18,7 @@
       224,
       224
     ],
+>>>>>>> origin/Trivedi-branch
     "accuracy": 1.0,
     "precision": 1.0,
     "recall": 1.0,
@@ -32,7 +40,11 @@
       ]
     },
     "false_negative_rate": 0.0,
+<<<<<<< HEAD
+    "safety_note": "High-confidence blank quarantine should remain reversible; model failures must route to review."
+=======
     "training_duration_seconds": 330.68
+>>>>>>> origin/Trivedi-branch
   },
   "tiger_detector": {
     "model_name": "YOLOv8-Wildlife-Tiger",
@@ -58,6 +70,36 @@
     "duration_seconds": 784.77
   },
   "tiger_identifier": {
+<<<<<<< HEAD
+    "model_name": "StripeEmbeddingNet-V2",
+    "training_date": "2026-08-16 20:19:23",
+    "architecture": "Spatial CNN + supervised identity head + Triplet Margin Loss",
+    "embedding_dim": 512,
+    "epochs": 4,
+    "batch_size": 16,
+    "loss_function": "TripletMarginLoss + weighted CrossEntropy",
+    "known_identities": 6,
+    "images_total": 81,
+    "split": "70/15/15 per identity (approx.)",
+    "validation_top1": 0.8462,
+    "validation_top3": 1.0,
+    "test_top1": 0.625,
+    "test_top3": 1.0,
+    "calibrated_high_threshold": 0.745,
+    "validation_false_reject_rate": 0.0,
+    "validation_false_match_rate": 0.1385,
+    "test_queries": 16,
+    "catalog_size": 6,
+    "duration_seconds": 22.69,
+    "evaluation_note": "Metrics are computed from held-out query images; no hardcoded accuracy values."
+  },
+  "notes": [
+    "Tiger detector weights are existing YOLO weights; retraining requires Ultralytics and was not executable in the offline build environment.",
+    "Re-ID dataset was cleaned by removing non-tiger crop distractors.",
+    "Re-ID metrics are held-out measurements, not hardcoded.",
+    "Autonomous identity assignment should remain disabled for ambiguous/low-confidence cases until a larger, genuinely field-collected Re-ID dataset is available."
+  ]
+=======
     "model_name": "CustomMetricCNN-StripeEmbedding",
     "training_date": "2026-08-17 00:22:50",
     "architecture": "Custom 4-Layer Metric CNN (Triplet Margin Loss)",
@@ -73,4 +115,5 @@
     "duration_seconds": 308.88
   },
   "overall_status": "VALIDATED"
+>>>>>>> origin/Trivedi-branch
 }

@@ -93,6 +93,22 @@ class BaghNetraAIPipeline:
         # 2. Blank Image Classification
         blank_res = self.blank_detector.predict(img, blank_threshold=b_thresh)
         blank_conf = blank_res["blank_confidence"]
+<<<<<<< HEAD
+        if blank_res.get("class") == "MODEL_UNAVAILABLE":
+            elapsed = time.time() - start_time
+            return {
+                "fileName": filename, "blank": False,
+                "blank_confidence": 0.0, "non_blank_confidence": 0.0,
+                "tiger_detected": False, "tiger_confidence": 0.0,
+                "detected_class": "MODEL_UNAVAILABLE", "bbox": [0, 0, w, h],
+                "individual": None, "tiger_name": None, "identification_confidence": 0.0,
+                "needs_review": True, "status": "MODEL_UNAVAILABLE", "candidates": [],
+                "has_human": False, "exif": exif,
+                "processing_time_ms": round(elapsed * 1000, 2),
+                "model_version": "BaghNetra-AI-v2.0"
+            }
+=======
+>>>>>>> origin/Trivedi-branch
         
         # High confidence blank -> Auto quarantine
         if blank_conf >= b_thresh:
@@ -143,6 +159,23 @@ class BaghNetraAIPipeline:
             
         # 3. Object Detection (Tiger / Other Animal / Human)
         det_res = self.tiger_detector.detect(img, confidence_threshold=TIGER_CONFIDENCE_THRESHOLD)
+<<<<<<< HEAD
+        if det_res.get("model") == "MODEL_UNAVAILABLE":
+            elapsed = time.time() - start_time
+            return {
+                "fileName": filename, "blank": False,
+                "blank_confidence": blank_res["blank_confidence"],
+                "non_blank_confidence": blank_res["non_blank_confidence"],
+                "tiger_detected": False, "tiger_confidence": 0.0,
+                "detected_class": "MODEL_UNAVAILABLE", "bbox": [0, 0, w, h],
+                "individual": None, "tiger_name": None, "identification_confidence": 0.0,
+                "needs_review": True, "status": "MODEL_UNAVAILABLE", "candidates": [],
+                "embedding": [], "has_human": False, "exif": exif,
+                "processing_time_ms": round(elapsed * 1000, 2),
+                "model_version": "BaghNetra-AI-v2.0"
+            }
+=======
+>>>>>>> origin/Trivedi-branch
         tiger_detected = (det_res["class"] == "tiger" and det_res["detected"])
         bbox = det_res.get("bbox", [0, 0, w, h])
         has_human = det_res.get("has_human", False)
@@ -203,5 +236,9 @@ class BaghNetraAIPipeline:
             "has_human": has_human,
             "exif": exif,
             "processing_time_ms": round(elapsed * 1000, 2),
+<<<<<<< HEAD
+            "model_version": f"YOLOv8-Tiger+StripeEmbeddingNet-V2"
+=======
             "model_version": f"YOLOv8-Tiger+MetricCNN-v1.0"
+>>>>>>> origin/Trivedi-branch
         }

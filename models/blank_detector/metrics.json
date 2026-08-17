@@ -1,5 +1,9 @@
 {
   "model_name": "BlankClassifier-MobileNetV3",
+<<<<<<< HEAD
+  "training_date": "2026-08-16 20:20:13",
+  "architecture": "MobileNetV3-Small fine-tuned with non-blank weighted loss + camera-trap augmentation",
+=======
   "training_date": "2026-08-17 00:02:45",
   "epochs": 10,
   "batch_size": 8,
@@ -8,6 +12,7 @@
     224,
     224
   ],
+>>>>>>> origin/Trivedi-branch
   "accuracy": 1.0,
   "precision": 1.0,
   "recall": 1.0,
@@ -29,5 +34,9 @@
     ]
   },
   "false_negative_rate": 0.0,
+<<<<<<< HEAD
+  "safety_note": "High-confidence blank quarantine should remain reversible; model failures must route to review."
+=======
   "training_duration_seconds": 330.68
+>>>>>>> origin/Trivedi-branch
 }

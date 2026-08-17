@@ -9,6 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+<<<<<<< HEAD
+    "axios": "^1.6.8",
+    "chart.js": "^4.4.2",
+    "clsx": "^2.1.0",
+=======
     "@radix-ui/react-avatar": "^1.2.6",
     "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-popover": "^1.1.23",
@@ -20,19 +25,27 @@
     "chart.js": "^4.4.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+>>>>>>> origin/Trivedi-branch
     "leaflet": "^1.9.4",
     "lucide-react": "^0.363.0",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0",
     "react-leaflet": "^4.2.1",
+<<<<<<< HEAD
+    "react-router-dom": "^6.22.3"
+=======
     "react-router-dom": "^6.22.3",
     "tailwind-merge": "^3.6.0"
+>>>>>>> origin/Trivedi-branch
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^4.2.1",
+<<<<<<< HEAD
+    "vite": "^5.1.6"
+=======
     "autoprefixer": "^10.5.4",
     "lightningcss": "^1.33.0",
     "postcss": "^8.5.26",
@@ -41,5 +54,6 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-darwin-arm64": "^4.62.4"
+>>>>>>> origin/Trivedi-branch
   }
 }
