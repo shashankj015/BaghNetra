@@ -19,6 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(ai_router, prefix="/ai")
 app.include_router(ai_router)
 
 @app.get("/")

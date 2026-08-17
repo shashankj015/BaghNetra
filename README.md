@@ -162,7 +162,4 @@ py ai-service/scripts/evaluate_models.py
 
 ## 8. License & Ethical Disclaimer
 BaghNetra is released under the **MIT License** for wildlife conservation authorities and ecological research institutions. All demo telemetry points are synthetic and do not disclose live coordinates of endangered species.
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/Trivedi-branch

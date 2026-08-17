@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Optional
 import numpy as np
 from PIL import Image
 
@@ -15,38 +15,14 @@ except ImportError:
 from app.preprocessing.image_ops import preprocess_for_classification
 from app.utils.logger import logger
 
-class BlankClassifierNN(nn.Module if HAS_TORCH else object):
+class BlankClassifier:
     """
-    MobileNetV3-based transfer learning classifier for Camera Trap Blank vs Non-Blank triage.
-    0 = BLANK (empty forest, moving grass, heat shimmer, insect flash, rain, darkness)
-    1 = NON_BLANK (wildlife, tigers, prey animals, human patrol)
+    MobileNetV3-Small binary classifier to identify empty/false-trigger camera trap images.
+    Output:
+      Class 0: BLANK (Empty vegetation, false trigger, blur)
+      Class 1: NON_BLANK (Wildlife or human present)
     """
-    def __init__(self, num_classes: int = 2, pretrained: bool = True):
-        if not HAS_TORCH:
-            return
-        super().__init__()
-        weights = models.MobileNet_V3_Small_Weights.DEFAULT if pretrained else None
-        base_model = models.mobilenet_v3_small(weights=weights)
-        
-        # Replace classifier head
-        in_features = base_model.classifier[0].in_features
-        base_model.classifier = nn.Sequential(
-            nn.Linear(in_features, 256),
-            nn.Hardswish(),
-            nn.Dropout(p=0.3),
-            nn.Linear(256, num_classes)
-        )
-        self.network = base_model
 
-    def forward(self, x):
-        return self.network(x)
-
-
-class BlankDetector:
-    """Wrapper for Blank Detection inference, thresholding and safe triage."""
-    
-    CLASS_LABELS = {0: "BLANK", 1: "NON_BLANK"}
-    
     def __init__(self, model_path: Optional[Path] = None, device: str = "cpu"):
         self.device = device
         self.model = None
@@ -55,15 +31,18 @@ class BlankDetector:
         
         if HAS_TORCH:
             try:
-                self.model = BlankClassifierNN(num_classes=2, pretrained=False)
+                # Initialize MobileNetV3-Small architecture with 2 output logits
+                self.model = models.mobilenet_v3_small(weights=None)
+                in_features = self.model.classifier[3].in_features
+                self.model.classifier[3] = nn.Linear(in_features, 2)
+                
                 if model_path and Path(model_path).exists():
                     state_dict = torch.load(model_path, map_location=device, weights_only=True)
-                    self.model.load_state_dict(state_dict)
+                    self.model.load_state_dict(state_dict, strict=False)
                     logger.info(f"Loaded Blank Detector weights from {model_path}")
                 else:
-                    # Initialize with pretrained weights for zero-shot capability
-                    self.model = BlankClassifierNN(num_classes=2, pretrained=True)
-                    logger.info("Initialized Blank Detector with MobileNetV3 base weights")
+                    logger.info("Loaded initialized MobileNetV3 Blank Classifier architecture")
+                    
                 self.model.to(device)
                 self.model.eval()
                 self.is_loaded = True
@@ -81,21 +60,7 @@ class BlankDetector:
             raw_scores (dict)
         """
         if not self.is_loaded or not HAS_TORCH:
-<<<<<<< HEAD
-            return {
-                "blank": False,
-                "blank_confidence": 0.0,
-                "non_blank_confidence": 0.0,
-                "class": "MODEL_UNAVAILABLE",
-                "model": "MODEL_UNAVAILABLE",
-                "version": "2.0.0",
-                "quarantine_recommended": False,
-                "needs_review": True
-            }
-=======
-            # Fallback visual variance & edge density heuristic if weights not yet loaded
             return self._heuristic_predict(image, blank_threshold)
->>>>>>> origin/Trivedi-branch
             
         try:
             tensor_data = preprocess_for_classification(image)
@@ -108,7 +73,7 @@ class BlankDetector:
             blank_prob = float(probs[0])
             non_blank_prob = float(probs[1])
             
-            # Use high-confidence blank threshold to avoid false negatives on irreplaceable field images
+            # Use high-confidence blank threshold to avoid false negatives on field images
             is_blank = blank_prob >= blank_threshold
             
             return {
@@ -122,21 +87,7 @@ class BlankDetector:
             }
         except Exception as e:
             logger.error(f"Blank classification error: {e}")
-<<<<<<< HEAD
-            return {
-                "blank": False,
-                "blank_confidence": 0.0,
-                "non_blank_confidence": 0.0,
-                "class": "MODEL_UNAVAILABLE",
-                "model": "MODEL_UNAVAILABLE",
-                "version": "2.0.0",
-                "quarantine_recommended": False,
-                "needs_review": True,
-                "error": str(e)
-            }
-=======
             return self._heuristic_predict(image, blank_threshold)
->>>>>>> origin/Trivedi-branch
 
     def _heuristic_predict(self, image: Image.Image, blank_threshold: float) -> Dict[str, Any]:
         """Field-safe heuristic analysis based on pixel gradient energy & contrast distribution."""
