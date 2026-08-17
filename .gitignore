@@ -52,6 +52,9 @@ dist/
 build/
 frontend/dist/
 frontend/build/
+.vite/
+*/.vite/
+runs/
 
 # Environment Configurations
 .env
