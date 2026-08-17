@@ -1,7 +1,7 @@
 {
   "model_name": "BlankClassifier-MobileNetV3",
-  "training_date": "2026-08-17 00:02:45",
-  "epochs": 10,
+  "training_date": "2026-08-17 01:55:33",
+  "epochs": 15,
   "batch_size": 8,
   "learning_rate": 0.001,
   "image_size": [
@@ -15,12 +15,12 @@
   "confusion_matrix": {
     "matrix": [
       [
-        74,
+        114,
         0
       ],
       [
         0,
-        45
+        85
       ]
     ],
     "labels": [
@@ -29,5 +29,5 @@
     ]
   },
   "false_negative_rate": 0.0,
-  "training_duration_seconds": 330.68
+  "training_duration_seconds": 619.01
 }
