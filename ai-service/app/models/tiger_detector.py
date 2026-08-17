@@ -108,7 +108,7 @@ class TigerDetector:
                         if cls_id == 0:
                             class_name = "human"
                             has_human = True
-                        elif cls_id in [15, 16, 21]: # Feline / large carnivore proxy
+                        elif cls_id in [15, 16, 21, 22]: # Felines, carnivores, and striped quadrupeds (Tiger Proxy in COCO)
                             class_name = "tiger"
                         else:
                             class_name = "other_animal"
