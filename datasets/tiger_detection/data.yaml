@@ -1,4 +1,4 @@
-path: C:/Users/Hp/OneDrive/Desktop/baghnetra/datasets/tiger_detection
+path: /Users/pagarearyanmanohar/code/hackathon/manthan/BaghNetra_mern/datasets/tiger_detection
 train: images/train
 val: images/val
 test: images/test
