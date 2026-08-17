@@ -65,10 +65,10 @@ export default function LeafletTigerMap({
       >
         <ChangeView center={center} zoom={zoom} />
         
-        {/* Dark Matter CartoDB Basemap for sleek telemetry theme */}
+        {/* Light Positron CartoDB Basemap */}
         <TileLayer
           attribution='&copy; <a href="https://carto.com/">CARTO</a> | Pench Tiger Reserve'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
         {/* Render Tiger Home Range Polygons */}
@@ -97,7 +97,7 @@ export default function LeafletTigerMap({
                 <Popup>
                   <div style={{ padding: '0.25rem' }}>
                     <h4 style={{ color: color, margin: 0, fontSize: '0.95rem' }}>{tiger.name} ({tiger.tigerId})</h4>
-                    <p style={{ margin: '0.2rem 0', fontSize: '0.8rem', color: '#9ca3af' }}>
+                    <p style={{ margin: '0.2rem 0', fontSize: '0.8rem', color: '#4b5563' }}>
                       Home Range: <strong>{tiger.occupiedArea || 'N/A'} km²</strong>
                     </p>
                     <p style={{ margin: 0, fontSize: '0.75rem', color: '#6b7280' }}>
@@ -120,7 +120,7 @@ export default function LeafletTigerMap({
                   }}
                 >
                   <Popup>
-                    <div style={{ fontSize: '0.8rem' }}>
+                    <div style={{ fontSize: '0.8rem', color: '#111827' }}>
                       <strong>Centroid: {tiger.name}</strong><br />
                       Lat: {tiger.activityCentroid.latitude.toFixed(4)}, Lon: {tiger.activityCentroid.longitude.toFixed(4)}
                     </div>
@@ -149,13 +149,13 @@ export default function LeafletTigerMap({
                     <span className={`badge ${st.zone === 'CORE' ? 'badge-core' : st.zone === 'BUFFER' ? 'badge-buffer' : 'badge-village'}`}>
                       {st.zone}
                     </span>
-                    <strong style={{ fontSize: '0.85rem' }}>{st.stationId}</strong>
+                    <strong style={{ fontSize: '0.85rem', color: '#111827' }}>{st.stationId}</strong>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#f3f4f6', fontWeight: '600' }}>{st.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.2rem' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#1f2937', fontWeight: '600' }}>{st.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#4b5563', marginTop: '0.2rem' }}>
                     Coordinates: {st.latitude.toFixed(4)}, {st.longitude.toFixed(4)}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#10b981', marginTop: '0.2rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: '0.2rem', fontWeight: '600' }}>
                     Total Captures: {st.totalCaptures || 0}
                   </div>
                 </div>
