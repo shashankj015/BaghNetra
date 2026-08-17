@@ -15,7 +15,7 @@ async function ensureDatasetTigers() {
   let needSeed = count !== raw.length;
   if (!needSeed) {
     const sample = await Tiger.findOne({});
-    if (!sample || !sample.embedding || sample.embedding.length !== 512) {
+    if (!sample || sample.tigerId !== raw[0].tigerId || !sample.embedding || sample.embedding.length !== 512) {
       needSeed = true;
     }
   }

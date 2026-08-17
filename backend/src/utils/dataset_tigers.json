@@ -1,8 +1,8 @@
 [
   {
-    "tigerId": "TIGER_153",
-    "rawIdentity": 153,
-    "name": "Wild Tiger #153",
+    "tigerId": "TIGER_1",
+    "rawIdentity": 1,
+    "name": "Tiger 1",
     "sex": "FEMALE",
     "estimatedAge": 3.0,
     "status": "RESIDENT",
@@ -644,12 +644,12 @@
     "occupiedArea": 88.7,
     "firstSeen": "2023-01-15T00:00:00Z",
     "lastSeen": "2024-05-10T00:00:00Z",
-    "healthNotes": "Wild Amur/Bengal Tiger individual with 98 camera-trap flank stripe profile captures in dataset."
+    "healthNotes": "Wild individual Tiger 1 with verified distinct biometric flank stripe pattern."
   },
   {
-    "tigerId": "TIGER_160",
-    "rawIdentity": 160,
-    "name": "Wild Tiger #160",
+    "tigerId": "TIGER_2",
+    "rawIdentity": 2,
+    "name": "Tiger 2",
     "sex": "MALE",
     "estimatedAge": 3.8,
     "status": "RESIDENT",
@@ -1290,12 +1290,12 @@
     "occupiedArea": 88.1,
     "firstSeen": "2023-01-15T00:00:00Z",
     "lastSeen": "2024-05-10T00:00:00Z",
-    "healthNotes": "Wild Amur/Bengal Tiger individual with 97 camera-trap flank stripe profile captures in dataset."
+    "healthNotes": "Wild individual Tiger 2 with verified distinct biometric flank stripe pattern."
   },
   {
-    "tigerId": "TIGER_154",
-    "rawIdentity": 154,
-    "name": "Wild Tiger #154",
+    "tigerId": "TIGER_3",
+    "rawIdentity": 3,
+    "name": "Tiger 3",
     "sex": "FEMALE",
     "estimatedAge": 4.6,
     "status": "RESIDENT",
@@ -1888,12 +1888,12 @@
     "occupiedArea": 56.9,
     "firstSeen": "2023-01-15T00:00:00Z",
     "lastSeen": "2024-05-10T00:00:00Z",
-    "healthNotes": "Wild Amur/Bengal Tiger individual with 49 camera-trap flank stripe profile captures in dataset."
+    "healthNotes": "Wild individual Tiger 3 with verified distinct biometric flank stripe pattern."
   },
   {
-    "tigerId": "TIGER_246",
-    "rawIdentity": 246,
-    "name": "Wild Tiger #246",
+    "tigerId": "TIGER_4",
+    "rawIdentity": 4,
+    "name": "Tiger 4",
     "sex": "MALE",
     "estimatedAge": 5.4,
     "status": "RESIDENT",
@@ -2485,12 +2485,12 @@
     "occupiedArea": 56.2,
     "firstSeen": "2023-01-15T00:00:00Z",
     "lastSeen": "2024-05-10T00:00:00Z",
-    "healthNotes": "Wild Amur/Bengal Tiger individual with 48 camera-trap flank stripe profile captures in dataset."
+    "healthNotes": "Wild individual Tiger 4 with verified distinct biometric flank stripe pattern."
   },
   {
-    "tigerId": "TIGER_243",
-    "rawIdentity": 243,
-    "name": "Wild Tiger #243",
+    "tigerId": "TIGER_5",
+    "rawIdentity": 5,
+    "name": "Tiger 5",
     "sex": "FEMALE",
     "estimatedAge": 6.2,
     "status": "RESIDENT",
@@ -3075,12 +3075,12 @@
     "occupiedArea": 51.7,
     "firstSeen": "2023-01-15T00:00:00Z",
     "lastSeen": "2024-05-10T00:00:00Z",
-    "healthNotes": "Wild Amur/Bengal Tiger individual with 41 camera-trap flank stripe profile captures in dataset."
+    "healthNotes": "Wild individual Tiger 5 with verified distinct biometric flank stripe pattern."
   },
   {
-    "tigerId": "TIGER_265",
-    "rawIdentity": 265,
-    "name": "Wild Tiger #265",
+    "tigerId": "TIGER_6",
+    "rawIdentity": 6,
+    "name": "Tiger 6",
     "sex": "MALE",
     "estimatedAge": 7.0,
     "status": "RESIDENT",
@@ -3662,6 +3662,6 @@
     "occupiedArea": 49.7,
     "firstSeen": "2023-01-15T00:00:00Z",
     "lastSeen": "2024-05-10T00:00:00Z",
-    "healthNotes": "Wild Amur/Bengal Tiger individual with 38 camera-trap flank stripe profile captures in dataset."
+    "healthNotes": "Wild individual Tiger 6 with verified distinct biometric flank stripe pattern."
   }
 ]

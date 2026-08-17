@@ -1,7 +1,7 @@
 [
   {
-    "tigerId": "TIGER_153",
-    "name": "Wild Tiger #153",
+    "tigerId": "TIGER_1",
+    "name": "Tiger 1",
     "sex": "FEMALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/003696.jpg",
@@ -522,8 +522,8 @@
     ]
   },
   {
-    "tigerId": "TIGER_160",
-    "name": "Wild Tiger #160",
+    "tigerId": "TIGER_2",
+    "name": "Tiger 2",
     "sex": "MALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/002986.jpg",
@@ -1044,8 +1044,8 @@
     ]
   },
   {
-    "tigerId": "TIGER_154",
-    "name": "Wild Tiger #154",
+    "tigerId": "TIGER_3",
+    "name": "Tiger 3",
     "sex": "FEMALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/001069.jpg",
@@ -1566,8 +1566,8 @@
     ]
   },
   {
-    "tigerId": "TIGER_246",
-    "name": "Wild Tiger #246",
+    "tigerId": "TIGER_4",
+    "name": "Tiger 4",
     "sex": "MALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/001205.jpg",
@@ -2088,8 +2088,8 @@
     ]
   },
   {
-    "tigerId": "TIGER_243",
-    "name": "Wild Tiger #243",
+    "tigerId": "TIGER_5",
+    "name": "Tiger 5",
     "sex": "FEMALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/001459.jpg",
@@ -2610,8 +2610,8 @@
     ]
   },
   {
-    "tigerId": "TIGER_265",
-    "name": "Wild Tiger #265",
+    "tigerId": "TIGER_6",
+    "name": "Tiger 6",
     "sex": "MALE",
     "status": "RESIDENT",
     "representativeImage": "/re-id/train/004685.jpg",
