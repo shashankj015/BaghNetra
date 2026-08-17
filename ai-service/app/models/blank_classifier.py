@@ -15,6 +15,27 @@ except ImportError:
 from app.preprocessing.image_ops import preprocess_for_classification
 from app.utils.logger import logger
 
+class BlankClassifierNN(nn.Module if HAS_TORCH else object):
+    """
+    MobileNetV3-Small transfer learning architecture for blank camera trap classification.
+    """
+    def __init__(self, num_classes: int = 2, pretrained: bool = False):
+        if not HAS_TORCH:
+            return
+        super().__init__()
+        self.network = models.mobilenet_v3_small(weights=None)
+        in_features = self.network.classifier[0].in_features
+        self.network.classifier = nn.Sequential(
+            nn.Linear(in_features, 256),
+            nn.Hardswish(),
+            nn.Dropout(p=0.2, inplace=True),
+            nn.Linear(256, num_classes)
+        )
+
+    def forward(self, x):
+        return self.network(x)
+
+
 class BlankClassifier:
     """
     MobileNetV3-Small binary classifier to identify empty/false-trigger camera trap images.
@@ -31,17 +52,14 @@ class BlankClassifier:
         
         if HAS_TORCH:
             try:
-                # Initialize MobileNetV3-Small architecture with 2 output logits
-                self.model = models.mobilenet_v3_small(weights=None)
-                in_features = self.model.classifier[3].in_features
-                self.model.classifier[3] = nn.Linear(in_features, 2)
+                self.model = BlankClassifierNN(num_classes=2, pretrained=False)
                 
                 if model_path and Path(model_path).exists():
                     state_dict = torch.load(model_path, map_location=device, weights_only=True)
-                    self.model.load_state_dict(state_dict, strict=False)
-                    logger.info(f"Loaded Blank Detector weights from {model_path}")
+                    self.model.load_state_dict(state_dict, strict=True)
+                    logger.info(f"Loaded Blank Detector MobileNetV3 weights from {model_path}")
                 else:
-                    logger.info("Loaded initialized MobileNetV3 Blank Classifier architecture")
+                    logger.info("Initialized MobileNetV3 Blank Classifier architecture")
                     
                 self.model.to(device)
                 self.model.eval()
