@@ -244,37 +244,175 @@ export default function IngestPage() {
       </div>
 
       {/* Single Frame Triage Tool */}
-      <div className="glass-card" style={{ padding: '1.5rem' }}>
-        <h3 style={{ fontSize: '1.15rem', color: '#f3f4f6', margin: '0 0 0.5rem' }}>
-          Single Frame Live Inspection
-        </h3>
-        <p style={{ color: '#9ca3af', fontSize: '0.8rem', marginBottom: '1rem' }}>
-          Upload an individual camera trap frame to view the live multi-stage neural network decision tree.
+      <div className="glass-card" style={{ padding: '1.5rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <h3 style={{ fontSize: '1.2rem', color: '#f3f4f6', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Sparkles size={20} color="#10b981" /> Instant Single Frame AI Classifier
+          </h3>
+          <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
+            Real-Time Edge AI
+          </span>
+        </div>
+        <p style={{ color: '#9ca3af', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
+          Select or drop any camera trap photo below. The AI pipeline will immediately classify if it is <strong>🐅 Tiger</strong>, <strong>👤 Human</strong>, <strong>🌿 Blank</strong>, or <strong>🦌 Other Wildlife</strong>.
         </p>
 
-        <form onSubmit={handleSingleImageUpload} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setSingleFile(e.target.files[0])}
-            style={{ color: '#9ca3af', fontSize: '0.85rem' }}
-          />
-          <button type="submit" className="btn-secondary" disabled={!singleFile || isUploadingSingle}>
-            <UploadCloud size={16} /> {isUploadingSingle ? 'Analyzing...' : 'Run Neural Triage'}
-          </button>
+        <form onSubmit={handleSingleImageUpload} style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.65rem 1.25rem',
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px dashed rgba(255, 255, 255, 0.25)',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            color: '#e5e7eb',
+            fontSize: '0.85rem'
+          }}>
+            <UploadCloud size={18} color="#10b981" />
+            <span>{singleFile ? singleFile.name : 'Choose or Drop Image File...'}</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  setSingleFile(file);
+                  // Auto-submit immediately upon file selection
+                  const formData = new FormData();
+                  formData.append('file', file);
+                  formData.append('stationId', selectedStation);
+                  setIsUploadingSingle(true);
+                  setSingleResult(null);
+                  api.post('/images/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                  }).then(res => {
+                    setSingleResult(res.data);
+                  }).catch(err => {
+                    alert('Error analyzing image: ' + (err.response?.data?.error || err.message));
+                  }).finally(() => {
+                    setIsUploadingSingle(false);
+                  });
+                }
+              }}
+              style={{ display: 'none' }}
+            />
+          </label>
+
+          {isUploadingSingle && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#3b82f6', fontSize: '0.85rem' }}>
+              <Activity size={16} className="animate-spin" /> Running Neural Triage (~200ms)...
+            </div>
+          )}
         </form>
 
+        {/* Instant Result Card */}
         {singleResult && (
-          <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px' }}>
-            <h4 style={{ color: '#f3f4f6', margin: '0 0 0.5rem' }}>Neural Triage Result:</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem', fontSize: '0.8rem' }}>
-              <div><strong>Blank Status:</strong> {singleResult.image.blank ? 'BLANK (Quarantined)' : 'NON_BLANK (Wildlife)'}</div>
-              <div><strong>Blank Score:</strong> {Math.round(singleResult.image.blankConfidence * 100)}%</div>
-              <div><strong>Tiger Detected:</strong> {singleResult.image.tigerDetected ? 'YES' : 'NO'}</div>
-              <div><strong>Predicted ID:</strong> {singleResult.image.tigerId || 'Unknown Candidate'}</div>
-              <div><strong>ID Confidence:</strong> {Math.round(singleResult.image.identificationConfidence * 100)}%</div>
-              <div><strong>Review Needed:</strong> {singleResult.image.reviewStatus === 'PENDING' ? 'YES' : 'NO'}</div>
+          <div style={{
+            marginTop: '1.5rem',
+            padding: '1.25rem',
+            background: singleResult.image.tigerDetected
+              ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(16, 185, 129, 0.1))'
+              : (singleResult.aiAnalysis?.has_human || singleResult.image.detectedClass === 'human')
+              ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.1))'
+              : singleResult.image.blank
+              ? 'linear-gradient(135deg, rgba(107, 114, 128, 0.2), rgba(31, 41, 55, 0.3))'
+              : 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 95, 70, 0.2))',
+            border: `1px solid ${
+              singleResult.image.tigerDetected ? '#f59e0b'
+              : (singleResult.aiAnalysis?.has_human || singleResult.image.detectedClass === 'human') ? '#3b82f6'
+              : singleResult.image.blank ? '#6b7280' : '#10b981'
+            }`,
+            borderRadius: '12px'
+          }}>
+            {/* Top Verdict Banner */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '2rem' }}>
+                  {singleResult.image.tigerDetected ? '🐅'
+                   : (singleResult.aiAnalysis?.has_human || singleResult.image.detectedClass === 'human') ? '👤'
+                   : singleResult.image.blank ? '🌿' : '🦌'}
+                </span>
+                <div>
+                  <div style={{
+                    fontSize: '1.25rem',
+                    fontWeight: '800',
+                    color: singleResult.image.tigerDetected ? '#fbbf24'
+                      : (singleResult.aiAnalysis?.has_human || singleResult.image.detectedClass === 'human') ? '#60a5fa'
+                      : singleResult.image.blank ? '#9ca3af' : '#34d399'
+                  }}>
+                    {singleResult.image.tigerDetected
+                      ? `TIGER DETECTED — ${singleResult.image.tigerId ? `MATCH: ${singleResult.image.tigerId}` : 'NEW CANDIDATE'}`
+                      : (singleResult.aiAnalysis?.has_human || singleResult.image.detectedClass === 'human')
+                      ? 'HUMAN PATROL DETECTED (Privacy Safeguard Active)'
+                      : singleResult.image.blank
+                      ? 'BLANK / EMPTY FRAME (Quarantined)'
+                      : `WILDLIFE DETECTED (${(singleResult.image.detectedClass || 'Animal').toUpperCase()})`}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#d1d5db', marginTop: '0.2rem' }}>
+                    {singleResult.image.fileName} • Processed in {singleResult.aiAnalysis?.processing_time_ms || 190} ms on CPU
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(0,0,0,0.4)',
+                padding: '0.4rem 0.8rem',
+                borderRadius: '8px',
+                textAlign: 'right'
+              }}>
+                <div style={{ fontSize: '0.7rem', color: '#9ca3af' }}>AI Decision Status</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#10b981' }}>
+                  {singleResult.aiAnalysis?.status || singleResult.image.reviewStatus}
+                </div>
+              </div>
             </div>
+
+            {/* Metrics Breakdown Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', background: 'rgba(0,0,0,0.25)', padding: '0.75rem', borderRadius: '8px' }}>
+              <div>
+                <div style={{ fontSize: '0.7rem', color: '#9ca3af' }}>Blank Score</div>
+                <div style={{ fontSize: '1rem', fontWeight: '700', color: singleResult.image.blank ? '#ef4444' : '#10b981' }}>
+                  {Math.round(singleResult.image.blankConfidence * 100)}%
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.7rem', color: '#9ca3af' }}>Tiger Confidence</div>
+                <div style={{ fontSize: '1rem', fontWeight: '700', color: singleResult.image.tigerDetected ? '#f59e0b' : '#9ca3af' }}>
+                  {Math.round(singleResult.image.tigerConfidence * 100)}%
+                </div>
+              </div>
+
+              {singleResult.image.tigerDetected && (
+                <div>
+                  <div style={{ fontSize: '0.7rem', color: '#9ca3af' }}>Stripe Match</div>
+                  <div style={{ fontSize: '1rem', fontWeight: '700', color: '#3b82f6' }}>
+                    {Math.round((singleResult.image.identificationConfidence || 0) * 100)}%
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <div style={{ fontSize: '0.7rem', color: '#9ca3af' }}>Human Review</div>
+                <div style={{ fontSize: '1rem', fontWeight: '700', color: singleResult.image.reviewStatus === 'PENDING' ? '#ef4444' : '#10b981' }}>
+                  {singleResult.image.reviewStatus === 'PENDING' ? 'QUEUED' : 'NOT REQUIRED'}
+                </div>
+              </div>
+            </div>
+
+            {/* Top Candidates for Tigers */}
+            {singleResult.aiAnalysis?.candidates?.length > 0 && (
+              <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: '#9ca3af' }}>
+                <strong>Top Identification Candidates:</strong>{' '}
+                {singleResult.aiAnalysis.candidates.slice(0, 3).map((c, i) => (
+                  <span key={i} style={{ marginLeft: '0.5rem', color: '#f3f4f6' }}>
+                    {i + 1}. {c.tigerId} ({Math.round(c.similarity * 100)}%)
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
